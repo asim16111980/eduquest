@@ -5,6 +5,16 @@
 **Status**: Draft  
 **Input**: User description: "@docs/implementation-plan.md create a spec for phase 0A ONLY."
 
+## Clarifications
+
+### Session 2026-05-10
+
+- Q: What Railway domain should be used for site URL configuration? → A: eduquest-admin.railway.app
+- Q: Which Supabase region and plan should be used? → A: US region, free tier
+- Q: What happens if Supabase project creation fails? → A: Auto-retry 3 times, then fail with clear error message and manual recreation steps
+- Q: How are API keys rotated/refreshed if compromised? → A: Rotate keys and systematically update all environment variables and documentation
+- Q: What happens if RLS enablement fails on specific tables? → A: Skip specific problematic tables and document the exception for future migration
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Setup Supabase Project (Priority: P1)
@@ -36,7 +46,7 @@ Platform administrator needs to configure global security policies including Row
 1. **Given** Supabase project exists, **When** administrator enables RLS, **Then** all tables have default deny policy
 2. **Given** RLS is enabled, **When** administrator checks table policies, **Then** no table allows unrestricted access
 3. **Given** project is configured, **When** administrator sets up Auth, **Then** only email/password authentication is enabled
-4. **Given** Auth is configured, **When** administrator sets site URL, **Then** it matches the Railway domain
+4. **Given** Auth is configured, **When** administrator sets site URL, **Then** it matches `eduquest-admin.railway.app`
 
 ---
 
@@ -74,9 +84,9 @@ Platform administrator needs to store all keys and credentials in environment va
 
 ### Edge Cases
 
-- What happens if Supabase project creation fails? [NEEDS CLARIFICATION: retry mechanism or alternative approach]
-- How are API keys rotated/refreshed if compromised? [NEEDS CLARIFICATION: key rotation process]
-- What happens if RLS enablement fails on specific tables? [NEEDS CLARIFICATION: fallback strategy]
+- What happens if Supabase project creation fails? System auto-retries 3 times, then fails with clear error message and manual recreation steps
+- How are API keys rotated/refreshed if compromised? Keys are rotated and all environment variables and documentation are systematically updated
+- What happens if RLS enablement fails on specific tables? Skip specific problematic tables and document the exception for future migration
 
 ## Requirements *(mandatory)*
 
@@ -85,7 +95,7 @@ Platform administrator needs to store all keys and credentials in environment va
 - **FR-001**: System MUST create a new Supabase project with default PostgreSQL configuration
 - **FR-002**: System MUST enable Row Level Security (RLS) globally with default deny on all tables
 - **FR-003**: System MUST configure email/password authentication only with PKCE flow
-- **FR-004**: System MUST set site URL to the Railway domain for callback URLs
+- **FR-004**: System MUST set site URL to `eduquest-admin.railway.app` for callback URLs
 - **FR-005**: System MUST enable Realtime for `activity_logs` and `leaderboard_snapshots` tables only
 - **FR-006**: System MUST store all connection strings and API keys in Railway environment variables
 - **FR-007**: System MUST configure `.env.local` with all required credentials
@@ -116,8 +126,9 @@ Platform administrator needs to store all keys and credentials in environment va
 ## Assumptions
 
 - Railway platform is available and configured for deployment
+- Supabase project will be deployed in US region using free tier plan
 - Supabase CLI is installed and authenticated on development machine
-- Project uses a Railway domain for production URLs (format: `project-name.railway.app`)
+- Project uses `eduquest-admin.railway.app` as the production domain for callback URLs
 - Email/password authentication is sufficient for admin dashboard (no social logins needed)
 - Only two tables require Realtime: `activity_logs` and `leaderboard_snapshots`
 - Standard entity tables will follow the pattern: `id UUID`, `created_at TIMESTAMPTZ`, `updated_at TIMESTAMPTZ`, `deleted_at TIMESTAMPTZ`
