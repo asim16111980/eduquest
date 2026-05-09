@@ -1,50 +1,52 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+# EduQuest Constitution
+<!-- Project-wide principles, stack rules, and architectural contracts -->
+<!-- This file is the source of truth. All specs, plans, and tasks derive from it -->
+<!-- When in conflict, this file wins -->
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Admin-First Design
+<!-- Dashboard built for platform operators with role-based access -->
+Dashboard built for platform operators with role-based access control. Every UI element respects the user's role hierarchy (super_admin > content_manager > teacher > viewer).
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+### II. Server-Driven Data Architecture
+<!-- Server Components fetch by default, Client Components for realtime -->
+Server Components fetch by default using createServerClient. Client Components only fetch for realtime subscriptions or user-triggered mutations. No direct Supabase calls from the client for sensitive operations.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### III. Database Schema Governance
+<!-- All changes through migrations, consistent schema patterns -->
+All schema changes go through numbered migration files. Every table has id UUID, created_at TIMESTAMPTZ, updated_at TIMESTAMPTZ. Soft deletes only via deleted_at column. Secrets stored in Supabase Vault.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### IV. Performance-First Rendering
+<!-- LCP targets, virtualization, pre-computed queries -->
+Dashboard overview page LCP < 2.5s. All charts render with skeleton loaders. Heavy tables use virtualization for >100 rows. Analytics queries aggregating >10k rows pre-computed via Postgres views.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### V. Export-First Reporting
+<!-- Exports respect filters, streamed server-side -->
+All exports respect current filter state. CSV exports streamed from Route Handlers, never buffered. PDF exports generated server-side. Exports include appropriate headers and format detection.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+## Additional Constraints
+<!-- Realtime usage, code quality, styling rules -->
+- Realtime used only for: leaderboard widgets, active-user counter, live event feed
+- All other data uses SWR/React Query with 30-second polling intervals
+- TypeScript strict mode: no `any`, no `ts-ignore` without comment explaining why
+- No inline styles — Tailwind utility classes only
+- Components are single-responsibility: chart components render charts, table components render tables
+- All mutations go through optimistic UI + server validation
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
-
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
-
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+## Development Workflow
+<!-- Code review, CI pipeline, accessibility, logging -->
+- Code review required for all PRs
+- Lint → typecheck → build CI pipeline via GitHub Actions
+- Error boundaries wrap every dashboard section
+- Accessible by default: ARIA labels, keyboard navigation, WCAG AA minimum colour contrast
+- No console.log in committed code — use structured logger utility
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
+<!-- Constitution authority, amendment process, versioning -->
+Constitution supersedes all other practices. Amendments require documentation and approval. Version bump according to semantic versioning:
+- MAJOR: Backward incompatible governance/principle removals or redefinitions
+- MINOR: New principle/section added or materially expanded guidance
+- PATCH: Clarifications, wording, typo fixes, non-semantic refinements
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
-
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Version**: 1.0.0 | **Ratified**: 2026-05-09 | **Last Amended**: 2026-05-09
