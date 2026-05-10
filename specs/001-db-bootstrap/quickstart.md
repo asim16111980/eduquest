@@ -37,15 +37,26 @@
 ### 3. Enable Row Level Security
 
 1. In Supabase Dashboard → Settings → Database
-2. Run the following SQL in the SQL Editor to enable RLS globally:
+2. Run the following SQL in the SQL Editor to enable RLS on required tables:
 
 ```sql
--- Enable RLS globally on all tables
-ALTER SYSTEM rls_enabled = true;
-SELECT * FROM pg_settings WHERE name = 'rls_enabled';
+-- Enable RLS on core tables
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE activities ENABLE ROW LEVEL SECURITY;
+ALTER TABLE leaderboard_snapshots ENABLE ROW LEVEL SECURITY;
+ALTER TABLE activity_logs ENABLE ROW LEVEL SECURITY;
+
+-- Verify RLS is enabled
+SELECT 
+  c.relname as table_name,
+  c.relrowsecurity as rls_enabled
+FROM pg_class c
+JOIN pg_namespace n ON c.relnamespace = n.oid
+WHERE n.nspname = 'public'
+  AND c.relname IN ('users', 'activities', 'leaderboard_snapshots', 'activity_logs');
 ```
 
-> Note: RLS will be enabled for individual tables during schema migrations via the security-config.sh script.
+> Note: RLS will be configured with specific policies during schema migrations via the security-config.sh script.
 
 ### 4. Configure Realtime
 
@@ -116,9 +127,17 @@ const { createClient } = require('@supabase/supabase-js');
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
 supabase.auth.signUp({ email: 'test@example.com', password: 'test123' })
   .then(({ data, error }) => {
-    if (error) console.error('Auth error:', error);
-    else console.log('User created:', data.user);
-    process.exit(0);
+    if (error) {
+      console.error('Auth error:', error);
+      process.exit(1);
+    } else {
+      console.log('User created:', data.user);
+      process.exit(0);
+    }
+  })
+  .catch((error) => {
+    console.error('Unexpected error:', error);
+    process.exit(1);
   });
 "
 ```
