@@ -1,0 +1,141 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Supabase Configuration Schema",
+  "description": "Schema for Supabase project configuration",
+  "type": "object",
+  "properties": {
+    "project": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 50,
+          "pattern": "^[a-z][a-z0-9-]*[a-z0-9]$"
+        },
+        "region": {
+          "type": "string",
+          "enum": ["us-east-1", "us-west-1", "eu-west-1", "ap-southeast-1"]
+        },
+        "plan": {
+          "type": "string",
+          "enum": ["free", "pro", "enterprise"]
+        }
+      },
+      "required": ["name", "region", "plan"]
+    },
+    "auth": {
+      "type": "object",
+      "properties": {
+        "site_url": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https://eduquest-admin\\.railway\\.app$"
+        },
+        "redirect_urls": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uri"
+          },
+          "minItems": 1
+        },
+        "providers": {
+          "type": "object",
+          "properties": {
+            "email": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "const": true
+                },
+                "pkce": {
+                  "type": "boolean",
+                  "const": true
+                }
+              },
+              "required": ["enabled", "pkce"]
+            }
+          },
+          "required": ["email"]
+        },
+        "session_settings": {
+          "type": "object",
+          "properties": {
+            "jwt_expiration": {
+              "type": "integer",
+              "minimum": 300,
+              "maximum": 86400
+            }
+          }
+        }
+      },
+      "required": ["site_url", "redirect_urls", "providers"]
+    },
+    "security": {
+      "type": "object",
+      "properties": {
+        "rls_enabled": {
+          "type": "boolean",
+          "const": true
+        },
+        "default_policy": {
+          "type": "string",
+          "enum": ["deny", "allow"]
+        },
+        "tables": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "policies": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": ["SELECT", "INSERT", "UPDATE", "DELETE"]
+                    },
+                    "definition": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["name", "type", "definition"]
+                }
+              }
+            },
+            "required": ["name", "policies"]
+          }
+        }
+      },
+      "required": ["rls_enabled", "default_policy", "tables"]
+    },
+    "realtime": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "tables": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["activity_logs", "leaderboard_snapshots"]
+          },
+          "uniqueItems": true
+        }
+      },
+      "required": ["enabled", "tables"]
+    }
+  },
+  "required": ["project", "auth", "security", "realtime"],
+  "additionalProperties": false
+}

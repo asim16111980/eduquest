@@ -129,8 +129,8 @@ Platform administrator needs to store all keys and credentials in environment va
 - Supabase project will be deployed in US region using free tier plan
 - Supabase CLI is installed and authenticated on development machine
 - Project uses `eduquest-admin.railway.app` as the production domain for callback URLs
-- Email/password authentication is sufficient for admin dashboard (no social logins needed)
+- Email/password authentication is sufficient for admin dashboard (social logins are explicitly not required)
 - Only two tables require Realtime: `activity_logs` and `leaderboard_snapshots`
 - Standard entity tables will follow the pattern: `id UUID`, `created_at TIMESTAMPTZ`, `updated_at TIMESTAMPTZ`, `deleted_at TIMESTAMPTZ`
-- Soft deletes will be used for all user-facing data
+- Soft deletes will be used for all user-facing data via deleted_at column
 - All schema changes will go through numbered migration files in the future

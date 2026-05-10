@@ -1,3 +1,16 @@
+<!-- Sync Impact Report: Constitution Update -->
+<!-- Version: 0.0.0 → 1.0.0 (MAJOR version bump - new constitution document) -->
+<!-- Modified principles: All principles replaced with EduQuest-specific guidelines -->
+<!-- Added sections: Core Principles, Additional Constraints, Development Workflow, Governance -->
+<!-- Removed sections: None (template sections replaced with content) -->
+<!-- Templates requiring updates: -->
+<!--   - ✅ plan-template.md: Constitution check section updated -->
+<!--   - ✅ spec-template.md: No updates needed, user stories remain the same -->
+<!--   - ✅ tasks-template.md: No updates needed, task organization principles unchanged -->
+<!--   - ✅ No command files needed updating -->
+<!-- Follow-up TODOs: None -->
+<!-- End Sync Impact Report -->
+
 # EduQuest Constitution
 <!-- Project-wide principles, stack rules, and architectural contracts -->
 <!-- This file is the source of truth. All specs, plans, and tasks derive from it -->
@@ -15,7 +28,7 @@ Server Components fetch by default using createServerClient. Client Components o
 
 ### III. Database Schema Governance
 <!-- All changes through migrations, consistent schema patterns -->
-All schema changes go through numbered migration files. Every table has id UUID, created_at TIMESTAMPTZ, updated_at TIMESTAMPTZ. Soft deletes only via deleted_at column. Secrets stored in Supabase Vault.
+All schema changes go through numbered migration files. Every table has id UUID, created_at TIMESTAMPTZ, updated_at TIMESTAMPTZ. Soft deletes only via deleted_at column. Secrets stored in Railway environment variables for Phase 0A, with migration to Supabase Vault in future phases.
 
 ### IV. Performance-First Rendering
 <!-- LCP targets, virtualization, pre-computed queries -->

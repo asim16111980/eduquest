@@ -5,7 +5,22 @@
       "Bash(git init *)",
       "Bash(git add *)",
       "Bash(git commit *)",
-      "Bash(git config *)"
+      "Bash(git config *)",
+      "Bash(./.claude/skills/speckit-git-commit/.specify/extensions/git/scripts/bash/auto-commit.sh after_constitution)",
+      "Bash(./.specify/extensions/git/scripts/bash/auto-commit.sh after_constitution)",
+      "Bash(./.claude/skills/speckit-git-feature/.specify/extensions/git/scripts/bash/create-new-feature.sh --json --short-name \"db-bootstrap\" \"create a spec for phase 0A ONLY\")",
+      "Bash(./.specify/extensions/git/scripts/bash/create-new-feature.sh --json --short-name \"db-bootstrap\" \"create a spec for phase 0A ONLY\")",
+      "Bash(./.specify/extensions/git/scripts/bash/auto-commit.sh after_specify)",
+      "Bash(./.specify/scripts/powershell/check-prerequisites.ps1 -Json -PathsOnly)",
+      "Bash(powershell -Command \"& {.specify/scripts/powershell/check-prerequisites.ps1 -Json -PathsOnly}\")",
+      "Bash(./.specify/extensions/git/scripts/bash/auto-commit.sh after_clarify)",
+      "Bash(.specify/scripts/powershell/setup-plan.ps1 *)",
+      "Bash(powershell *)",
+      "Bash(.specify/scripts/powershell/setup-tasks.ps1 *)",
+      "Bash(powershell.exe *)",
+      "Bash(git push *)",
+      "Bash(gh pr *)",
+      "Bash(gh auth *)"
     ]
   }
 }
