@@ -28,8 +28,24 @@ log_with_level() {
     local message="$3"
     local timestamp=$(date +"$TIMESTAMP_FORMAT")
 
+    # Map severity levels to numeric ranks
+    local -A level_ranks
+    level_ranks["DEBUG"]=0
+    level_ranks["INFO"]=1
+    level_ranks["WARN"]=2
+    level_ranks["ERROR"]=3
+
+    # Get message rank and configured rank
+    local message_rank=${level_ranks["$level"]}
+    local configured_rank=${level_ranks["$LOG_LEVEL"]}
+
+    # Default to INFO level if not configured
+    if [[ -z "$configured_rank" ]]; then
+        configured_rank=1
+    fi
+
     # Check if this level should be logged
-    if [[ "$level" == "DEBUG" && "$LOG_LEVEL" != "DEBUG" ]]; then
+    if [[ $message_rank -lt $configured_rank ]]; then
         return
     fi
 
@@ -37,12 +53,7 @@ log_with_level() {
     echo "[$timestamp] [$level] $message" >> "$LOG_FILE"
 
     # Log to terminal with color
-    if [[ "$LOG_LEVEL" == "ERROR" ]] || \
-       [[ "$LOG_LEVEL" == "WARN" && "$level" != "DEBUG" ]] || \
-       [[ "$LOG_LEVEL" == "INFO" && "$level" != "DEBUG" && "$level" != "WARN" ]] || \
-       [[ "$LOG_LEVEL" == "DEBUG" ]]; then
-        echo -e "${color}[${timestamp}] [$level] ${message}${COLOR_NC}" >&2
-    fi
+    echo -e "${color}[${timestamp}] [$level] ${message}${COLOR_NC}" >&2
 }
 
 # Public logging functions

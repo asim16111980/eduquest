@@ -36,8 +36,24 @@ load_env() {
             [[ "$line" =~ ^\s*# ]] && continue
             [[ -z "$line" ]] && continue
 
-            # Export variable
-            export "$line"
+            # Split line into key and value
+            key=${line%%=*}
+            value=${line#*=}
+
+            # Validate key format (only uppercase letters, numbers, and underscores)
+            if [[ ! "$key" =~ ^[A-Z_][A-Z0-9_]*$ ]]; then
+                log_error "Invalid environment variable name: $key"
+                continue
+            fi
+
+            # Check for suspicious characters in value
+            if [[ "$value" =~ [`$] || "$value" =~ \\\\ ]]; then
+                log_error "Suspicious characters in environment variable: $key"
+                continue
+            fi
+
+            # Export safely
+            export "${key}=${value}"
         done < "$env_file"
 
         log_debug "Loaded environment variables from $env_file"
@@ -58,7 +74,7 @@ validate_var() {
     fi
 
     if [[ -n "$pattern" && ! "$var_value" =~ $pattern ]]; then
-        log_error "Environment variable $var_value has invalid format for $var_name"
+        log_error "Environment variable for $var_name has invalid format"
         return 1
     fi
 
@@ -158,13 +174,7 @@ check_gitignore() {
     local env_file="$2"
 
     if [[ -f "$gitignore_file" ]]; then
-        # Check if .env* is ignored
-        if ! grep -q "^\\.env" "$gitignore_file"; then
-            log_warn "Environment files are not ignored in gitignore"
-            return 1
-        fi
-
-        # Check if .env* patterns exist
+        # Check if both .env and .env.local patterns exist
         if ! grep -q "^\\.env" "$gitignore_file" || \
            ! grep -q "\\.env\\.local" "$gitignore_file"; then
             log_warn "Some environment patterns missing from gitignore"

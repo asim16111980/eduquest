@@ -15,7 +15,7 @@ fi
 
 # Test failure case
 retry "exit 1" 1 1 "Test failure"
-local exit_code=$?
+exit_code=$?
 if [[ $exit_code -eq 0 ]]; then
     log_error "✗ Retry should have failed but succeeded"
     exit 1

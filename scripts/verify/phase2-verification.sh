@@ -6,12 +6,6 @@
 source "$(dirname "$0")/../lib/logging.sh"
 source "$(dirname "$0")/../lib/retry-utils.sh"
 source "$(dirname "$0")/../lib/env-validation.sh"
-source "$(dirname "$0")/../lib/logging.sh"
-source "$(dirname "$0")/../lib/retry-utils.sh"
-source "$(dirname "$0")/../lib/env-validation.sh"
-source "$(dirname "$0")/../lib/logging.sh"
-source "$(dirname "$0")/../lib/retry-utils.sh"
-source "$(dirname "$0")/../lib/env-validation.sh"
 # Source CLI framework
 if [[ -f "$(dirname "$0")/../scripts/setup/cli-auth-framework.sh" ]]; then
     source "$(dirname "$0")/../scripts/setup/cli-auth-framework.sh"
@@ -73,8 +67,7 @@ test_library_files() {
         else
             # Check if file is executable
             if [[ ! -x "$file" ]]; then
-                chmod +x "$file"
-                log_info "Made $file executable"
+                log_warn "File $file is not executable - please fix permissions manually"
             fi
         fi
     done
@@ -142,6 +135,9 @@ test_logging() {
 test_env_validation() {
     log_info "Testing environment validation..."
 
+    # Save original SUPABASE_URL
+    local original_url="$SUPABASE_URL"
+
     # Test with empty environment
     if validate_required; then
         log_error "✗ Validation should have failed with empty environment"
@@ -153,6 +149,13 @@ test_env_validation() {
     if validate_var "SUPABASE_URL" "$SUPABASE_URL" "$URL_PATTERN"; then
         log_error "✗ URL validation should have failed"
         return 1
+    fi
+
+    # Restore original SUPABASE_URL
+    if [[ -n "$original_url" ]]; then
+        export SUPABASE_URL="$original_url"
+    else
+        unset SUPABASE_URL
     fi
 
     log_success "✓ Environment validation working correctly"

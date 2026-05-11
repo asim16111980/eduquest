@@ -21,7 +21,11 @@ check_cli_installed() {
         return 1
     fi
 
-    local version=$(supabase --version)
+    if ! version=$(supabase --version); then
+        log_error "Failed to get Supabase CLI version"
+        return 1
+    fi
+
     log_info "Supabase CLI found: $version"
     return 0
 }
@@ -56,7 +60,7 @@ handle_authentication() {
     # If email provided, attempt login
     if [[ -n "$email" ]]; then
         log_info "Attempting login with email..."
-        retry_supabase_command "supabase auth login --email $email --password $password" \
+        SUPABASE_PASSWORD="$password" retry_supabase_command "supabase auth login --email $email --password-stdin" \
                               "Email login" \
                               3
         return $?
@@ -101,11 +105,9 @@ link_project() {
 
     # Link project
     log_info "Linking project: $project_ref"
-    retry_supabase_command "supabase link --project-ref $project_ref" \
-                          "Project link" \
-                          3
-
-    if [[ $? -eq 0 ]]; then
+    if retry_supabase_command "supabase link --project-ref $project_ref" \
+                             "Project link" \
+                             3; then
         # Save project ref
         echo "$project_ref" > "$PROJECT_REF_FILE"
         touch "$PROJECT_LINKED_FLAG"
@@ -160,7 +162,7 @@ get_project_info() {
 
     log_info "Fetching project information..."
 
-    retry_supabase_command "supabase projects list --format json | jq -r \".[] | select(.ref == \\\"$project_ref\\\") | \\(.name) | \\(.region) | \\(.status)\"" \
+    retry_supabase_command "supabase projects list --format json | jq -r --arg project_ref \"$project_ref\" '.[] | select(.ref == \$project_ref) | \"\(.name)\t\(.region)\t\(.status)\"'" \
                           "Get project info" \
                           3 || return 1
 }
