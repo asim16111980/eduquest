@@ -47,7 +47,7 @@ load_env() {
             fi
 
             # Check for suspicious characters in value
-            if [[ "$value" =~ [`$] || "$value" =~ \\\\ ]]; then
+            if [[ "$value" =~ [\`] || "$value" =~ \\\\$ ]]; then
                 log_error "Suspicious characters in environment variable: $key"
                 continue
             fi
@@ -130,9 +130,9 @@ validate_required() {
 
 # Validate Railway domain
 validate_railway_domain() {
-    local site_url="${SUPABASE_SITE_URL:-https://eduquest-admin.railway.app}"
+    local site_url="${SITE_URL:-https://eduquest-admin.railway.app}"
 
-    if [[ ! "$site_url" == *.railway.app ]]; then
+    if [[ -n "$site_url" && ! "$site_url" == *.railway.app ]]; then
         log_warn "Site URL $site_url does not appear to be a Railway domain"
         return 1
     fi
@@ -155,6 +155,11 @@ generate_env_template() {
 SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
 SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+# Site URL for authentication callbacks
+# Update these values for your environment (localhost, production, etc.)
+SITE_URL=http://localhost:3000
+AUTH_CALLBACK_URL=http://localhost:3000/auth/callback
 
 # Logging Configuration (optional)
 # DEBUG=true  # Enable debug logging

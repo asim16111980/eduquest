@@ -3,9 +3,9 @@
 # Supabase CLI authentication and project linking framework
 # Usage: source cli-auth-framework.sh
 
-source "$(dirname "$0")/../lib/logging.sh"
-source "$(dirname "$0")/../lib/retry-utils.sh"
-source "$(dirname "$0")/../lib/env-validation.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/../lib/logging.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/../lib/retry-utils.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/../lib/env-validation.sh"
 
 # Configuration
 PROJECT_REF_FILE=".supabase_project_ref"
@@ -57,20 +57,27 @@ handle_authentication() {
 
     log_info "Authentication required"
 
-    # If email provided, attempt login
+    # If token provided, attempt token authentication
     if [[ -n "$email" ]]; then
-        log_info "Attempting login with email..."
-        SUPABASE_PASSWORD="$password" retry_supabase_command "supabase auth login --email $email --password-stdin" \
-                              "Email login" \
-                              3
-        return $?
+        log_info "Attempting token authentication..."
+        if [[ -n "$password" && "$password" == *"ey"* ]]; then
+            # Looks like a JWT token
+            export SUPABASE_ACCESS_TOKEN="$password"
+            retry_supabase_command "supabase link --project-ref $project_ref" \
+                                  "Token authentication" \
+                                  3
+            return $?
+        else
+            log_error "Invalid token format provided"
+            return 1
+        fi
     else
         log_info "Please authenticate manually:"
         log_info "1. Run: supabase auth login"
         log_info "2. Follow the prompts to authenticate"
         log_info ""
-        log_info "Or provide email and password as arguments:"
-        log_info "  $0 --auth-email your@email.com --auth-password yourpass"
+        log_info "Or provide a Supabase access token as argument:"
+        log_info "  $0 --auth-token eyJhbGciOi..."
         return 1
     fi
 }
@@ -86,10 +93,13 @@ link_project() {
         return 1
     fi
 
-    # Check if already linked
-    if [[ -f "$PROJECT_LINKED_FLAG" ]]; then
-        log_info "Project already linked"
-        return 0
+    # Check if already linked and matches the requested ref
+    if [[ -f "$PROJECT_LINKED_FLAG" && -f "$PROJECT_REF_FILE" ]]; then
+        local stored_ref=$(cat "$PROJECT_REF_FILE" | tr -d '\n\r')
+        if [[ "$stored_ref" == "$project_ref" ]]; then
+            log_info "Project already linked with matching ref"
+            return 0
+        fi
     fi
 
     # Load environment

@@ -18,7 +18,10 @@ COLOR_NC='\033[0m' # No Color
 # Initialize log file
 init_logging() {
     mkdir -p "$(dirname "$LOG_FILE")"
-    echo "=== EduQuest Setup Log - $(date) ===" > "$LOG_FILE"
+    # Only write header if file doesn't exist or is empty
+    if [[ ! -s "$LOG_FILE" ]]; then
+        echo "=== EduQuest Setup Log - $(date) ===" > "$LOG_FILE"
+    fi
 }
 
 # Logging functions with level filtering

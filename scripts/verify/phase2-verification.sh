@@ -7,8 +7,8 @@ source "$(dirname "$0")/../lib/logging.sh"
 source "$(dirname "$0")/../lib/retry-utils.sh"
 source "$(dirname "$0")/../lib/env-validation.sh"
 # Source CLI framework
-if [[ -f "$(dirname "$0")/../scripts/setup/cli-auth-framework.sh" ]]; then
-    source "$(dirname "$0")/../scripts/setup/cli-auth-framework.sh"
+if [[ -f "$(dirname "$0")/../setup/cli-auth-framework.sh" ]]; then
+    source "$(dirname "$0")/../setup/cli-auth-framework.sh"
 else
     echo "Warning: CLI framework not found, skipping CLI tests"
 fi
@@ -215,16 +215,17 @@ test_project_utils() {
     fi
 
     # Test help command (help returns 1, which is expected)
-    if ./scripts/verify/project-connection.sh help > /dev/null 2>&1; then
+    local help_output
+    if help_output=$(./scripts/verify/project-connection.sh help 2>&1); then
         log_success "✓ Project connection utility help works"
         return 0
     else
         # Check if it's the expected help behavior
-        if grep -q "Usage:" scripts/verify/project-connection.sh; then
+        if echo "$help_output" | grep -q "Usage:"; then
             log_success "✓ Project connection utility help works (expected exit code)"
             return 0
         else
-            log_error "✗ Project connection utility help failed"
+            log_error "✗ Project connection utility help failed: $help_output"
             return 1
         fi
     fi

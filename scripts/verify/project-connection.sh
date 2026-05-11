@@ -37,7 +37,12 @@ check_project_linked() {
     log_info "Checking project link for ref: $project_ref"
 
     # Get exact project ref from list
-    local project_list=$(supabase projects list --format json)
+    local project_list
+    if ! project_list=$(supabase projects list --format json 2>&1); then
+        log_error "Failed to get project list: $project_list"
+        return 1
+    fi
+
     if echo "$project_list" | jq -e --arg ref "$project_ref" '.[] | select(.ref == $ref)' > /dev/null; then
         log_success "Project $project_ref is linked"
         return 0
@@ -82,7 +87,12 @@ get_project_details() {
     log_info "Fetching project details for: $project_ref"
 
     # Cache the JSON output to avoid multiple calls
-    local project_list=$(supabase projects list --format json)
+    local project_list
+    if ! project_list=$(supabase projects list --format json 2>&1); then
+        log_error "Failed to get project list: $project_list"
+        return 1
+    fi
+
     if echo "$project_list" | jq -e --arg project_ref "$project_ref" '.[] | select(.ref == $project_ref)' > /dev/null; then
         echo "$project_list" | \
             jq --arg project_ref "$project_ref" '.[] | select(.ref == $project_ref) | {name, region, status, plan, created_at}'
