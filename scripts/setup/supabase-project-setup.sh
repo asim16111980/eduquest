@@ -43,7 +43,15 @@ validate_inputs() {
 
     # Validate region
     valid_regions=("us-east-1" "us-west-1" "eu-west-1" "ap-southeast-1")
-    if [[ ! " ${valid_regions[*]} " =~ " $region " ]]; then
+    local region_found=false
+    for r in "${valid_regions[@]}"; do
+        if [[ "$r" == "$region" ]]; then
+            region_found=true
+            break
+        fi
+    done
+
+    if ! $region_found; then
         log_error "Invalid region: '$region'"
         echo "Valid regions are: ${valid_regions[*]}"
         exit 1
@@ -92,7 +100,8 @@ create_project() {
     # Wait for project to be ready using retry utility
     log_info "Waiting for project to be ready..."
     if wait_for_project_creation "$project_name"; then
-        local end_time=$(date +%s)
+        local end_time
+        end_time=$(date +%s)
         local duration=$((end_time - start_time))
         log_info "Project created successfully in ${duration}s"
 
@@ -120,7 +129,14 @@ verify_project() {
     fi
 
     # Check project status
-    local status=$(supabase projects list 2>/dev/null | grep "$project_name" | awk '{print $2}')
+    local list_output
+    if ! list_output=$(supabase projects list 2>/dev/null); then
+        log_error "Failed to list projects"
+        exit 1
+    fi
+
+    local status
+    status=$(echo "$list_output" | grep "$project_name" | awk '{print $2}')
     if [[ "$status" != "ACTIVE" ]]; then
         log_error "Project is not active (status: $status)"
         exit 1

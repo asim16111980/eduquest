@@ -41,12 +41,20 @@ load_config() {
 # Function to verify project exists
 verify_project_exists() {
     local project_ref="$1"
-    local start_time=$(date +%s%N)
+    local start_time
+    start_time=$(date +%s%N)
 
     log_info "Verifying project exists: $project_ref"
 
-    if supabase projects list 2>/dev/null | grep -q "$project_ref"; then
-        local end_time=$(date +%s%N)
+    local list_output
+if ! list_output=$(supabase projects list 2>/dev/null); then
+        log_error "Failed to list projects"
+        return 1
+    fi
+
+    if echo "$list_output" | grep -q "$project_ref"; then
+        local end_time
+        end_time=$(date +%s%N)
         local duration=$(((end_time - start_time) / 1000000))
         log_info "Project exists (took ${duration}ms)"
         return 0
@@ -63,7 +71,13 @@ check_project_status() {
 
     log_info "Checking project status..."
 
-    status=$(supabase projects list 2>/dev/null | grep "$project_ref" | awk '{print $2}')
+    local list_output
+    if ! list_output=$(supabase projects list 2>/dev/null); then
+        log_error "Failed to list projects"
+        return 1
+    fi
+
+    status=$(echo "$list_output" | grep "$project_ref" | awk '{print $2}')
 
     case $status in
         "ACTIVE")
