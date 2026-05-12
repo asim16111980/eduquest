@@ -60,12 +60,12 @@ description: "Task list for Database Bootstrap Phase 0A implementation"
 
 ### Implementation for User Story 1
 
-- [ ] T009 [P] [US1] Create Supabase project setup script in scripts/setup/supabase-project-setup.sh
-- [ ] T010 [P] [US1] Create project creation verification script in scripts/verify/project-connection.sh
-- [ ] T011 [US1] Add retry logic with exponential backoff for project creation in scripts/setup/supabase-project-setup.sh
-- [ ] T012 [US1] Create project reference documentation template in docs/project-setup.md
-- [ ] T013 [US1] Implement CLI linking verification in scripts/verify/project-connection.sh
-- [ ] T013.5 [P] [US1] Measure project creation time in scripts/verify/project-connection.sh
+- [X] T009 [P] [US1] Create Supabase project setup script in scripts/setup/supabase-project-setup.sh
+- [X] T010 [P] [US1] Create project creation verification script in scripts/verify/project-connection.sh
+- [X] T011 [US1] Add retry logic with exponential backoff for project creation in scripts/setup/supabase-project-setup.sh
+- [X] T012 [US1] Create project reference documentation template in docs/project-setup.md
+- [X] T013 [US1] Implement CLI linking verification in scripts/verify/project-connection.sh
+- [X] T013.5 [P] [US1] Measure project creation time in scripts/verify/project-connection.sh
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and testable independently
 

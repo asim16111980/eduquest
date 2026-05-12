@@ -60,9 +60,7 @@ handle_authentication() {
         if [[ "$token" == sbp_* ]]; then
             # Looks like a Supabase access token with correct prefix
             export SUPABASE_ACCESS_TOKEN="$token"
-            retry_supabase_command "supabase auth login --token $token" \
-                                  "Token authentication" \
-                                  3
+            retry_supabase_command "Token authentication" 3 supabase auth login --token "$token"
             return $?
         else
             log_error "Invalid token format. Token must start with 'sbp_'"
@@ -112,9 +110,7 @@ link_project() {
 
     # Link project
     log_info "Linking project: $project_ref"
-    if retry_supabase_command "supabase link --project-ref $project_ref" \
-                             "Project link" \
-                             3; then
+    if retry_supabase_command "Project link" 3 supabase link --project-ref "$project_ref"; then
         # Save project ref
         echo "$project_ref" > "$PROJECT_REF_FILE"
         touch "$PROJECT_LINKED_FLAG"
@@ -172,9 +168,14 @@ get_project_info() {
 
     log_info "Fetching project information..."
 
-    retry_supabase_command "supabase projects list --format json | jq -r --arg project_ref \"$project_ref\" '.[] | select(.ref == \$project_ref) | \"\(.name)\t\(.region)\t\(.status)\"'" \
-                          "Get project info" \
-                          3 || return 1
+    # Use jq if available, otherwise fall back to awk
+    if command -v jq &> /dev/null; then
+        retry_supabase_command "Get project info" 3 \
+            bash -c "supabase projects list --format json | jq -r --arg project_ref \"$project_ref\" '.[] | select(.ref == \$project_ref) | \"\(.name)\t\(.region)\t\(.status)\"'"
+    else
+        retry_supabase_command "Get project info" 3 \
+            bash -c "supabase projects list | grep \"$project_ref\""
+    fi
 }
 
 # Setup complete marker

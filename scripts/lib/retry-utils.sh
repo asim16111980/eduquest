@@ -9,23 +9,18 @@ BASE_DELAY=${BASE_DELAY:-2}
 BACKOFF_FACTOR=${BACKOFF_FACTOR:-2}
 
 retry() {
-    local command="$1"
-    local max_attempts="${2:-$MAX_RETRIES}"
-    local initial_delay="${3:-$BASE_DELAY}"
-    local description="$4"
+    local max_attempts="${1:-$MAX_RETRIES}"
+    local initial_delay="${2:-$BASE_DELAY}"
+    local description="${3:-Command}"
+    shift 3
     local attempt=1
     local delay=$initial_delay
 
-    if [[ -z "$description" ]]; then
-        description="Command: $command"
-    fi
-
     log_info "Starting: $description"
-    log_debug "Command: $command"
     log_debug "Max attempts: $max_attempts, Initial delay: ${initial_delay}s"
 
     while [[ $attempt -le $max_attempts ]]; do
-        if eval "$command"; then
+        if "$@"; then
             log_info "Success: $description (attempt $attempt/$max_attempts)"
             return 0
         else
@@ -50,26 +45,25 @@ retry() {
 
 # Supabase-specific retry wrapper
 retry_supabase_command() {
-    local command="$1"
-    local description="$2"
-    local max_attempts="${3:-$MAX_RETRIES}"
+    local description="$1"
+    local max_attempts="${2:-$MAX_RETRIES}"
+    shift 2
 
-    # Special handling for Supabase operations that often need time
-    retry "$command" "$max_attempts" "$BASE_DELAY" "$description"
+    retry "$max_attempts" "$BASE_DELAY" "$description" "$@"
 }
 
 # Wait for service to be ready
 wait_for_service() {
     local service_name="$1"
-    local check_command="$2"
-    local timeout="${3:-300}"  # 5 minutes default
-    local interval="${4:-10}"  # 10 seconds default
+    local timeout="${2:-300}"  # 5 minutes default
+    local interval="${3:-10}"  # 10 seconds default
+    shift 3
 
     log_info "Waiting for $service_name to be ready..."
     local elapsed=0
 
     while [[ $elapsed -lt $timeout ]]; do
-        if eval "$check_command"; then
+        if "$@"; then
             log_info "$service_name is ready!"
             return 0
         fi
@@ -80,5 +74,36 @@ wait_for_service() {
     done
 
     log_error "$service_name did not become ready within $timeout seconds"
+    return 1
+}
+
+# Wait for Supabase project creation to complete
+wait_for_project_creation() {
+    local project_name="$1"
+    local timeout="${2:-300}"  # 5 minutes default
+    local interval="${3:-10}"  # 10 seconds default
+
+    log_info "Waiting for project '$project_name' to be ready..."
+    local elapsed=0
+
+    while [[ $elapsed -lt $timeout ]]; do
+        # Check if project exists and is ACTIVE
+        local status=$(supabase projects list 2>/dev/null | grep "$project_name" | awk '{print $2}')
+
+        if [[ "$status" == "ACTIVE" ]]; then
+            log_info "Project '$project_name' is ACTIVE!"
+            return 0
+        elif [[ "$status" == "FAILED" ]]; then
+            log_error "Project creation FAILED"
+            return 1
+        elif [[ "$status" == "CREATING" ]]; then
+            log_debug "Project is still being created... ($elapsed/${timeout}s)"
+        fi
+
+        sleep $interval
+        elapsed=$((elapsed + interval))
+    done
+
+    log_error "Project did not become ready within $timeout seconds"
     return 1
 }

@@ -121,6 +121,11 @@ web_modules/
 
 # Supabase
 .supabase/
+.supabase_project_ref
+.supabase_config
+.supabase_db_password
+.project_linked
+.setup_complete
 
 # IDEs and editors
 .idea/
