@@ -42,11 +42,11 @@ description: "Task list for Database Bootstrap Phase 0A implementation"
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T004 Setup Supabase CLI authentication and project linking framework
-- [ ] T005 [P] Create error handling and retry logic utilities for transient failures
-- [ ] T006 Configure logging infrastructure for setup operations
-- [ ] T007 Setup environment configuration validation system
-- [ ] T008 Create verification utilities for project connection
+- [X] T004 Setup Supabase CLI authentication and project linking framework
+- [X] T005 [P] Create error handling and retry logic utilities for transient failures
+- [X] T006 Configure logging infrastructure for setup operations
+- [X] T007 Setup environment configuration validation system
+- [X] T008 Create verification utilities for project connection
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -61,11 +61,11 @@ description: "Task list for Database Bootstrap Phase 0A implementation"
 ### Implementation for User Story 1
 
 - [ ] T009 [P] [US1] Create Supabase project setup script in scripts/setup/supabase-project-setup.sh
-- [ ] T010 [P] [US1] Create project creation verification script in scripts/verify-project.sh
+- [ ] T010 [P] [US1] Create project creation verification script in scripts/verify/project-connection.sh
 - [ ] T011 [US1] Add retry logic with exponential backoff for project creation in scripts/setup/supabase-project-setup.sh
 - [ ] T012 [US1] Create project reference documentation template in docs/project-setup.md
-- [ ] T013 [US1] Implement CLI linking verification in scripts/verify-project.sh
-- [ ] T013.5 [P] [US1] Measure project creation time in scripts/verify-project.sh
+- [ ] T013 [US1] Implement CLI linking verification in scripts/verify/project-connection.sh
+- [ ] T013.5 [P] [US1] Measure project creation time in scripts/verify/project-connection.sh
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and testable independently
 
@@ -83,9 +83,9 @@ description: "Task list for Database Bootstrap Phase 0A implementation"
 - [ ] T015 [P] [US2] Create RLS enablement SQL script in sql/enable-rls.sql
 - [ ] T016 [US2] Implement authentication configuration in scripts/setup/security-config.sh
 - [ ] T017 [US2] Create site URL configuration for Railway domain in scripts/setup/security-config.sh
-- [ ] T018 [US2] Create security verification script in scripts/verify-security.sh
+- [ ] T018 [US2] Create security verification script in scripts/verify/security-verification.sh
 - [ ] T019 [US2] Add PKCE flow enablement in scripts/setup/security-config.sh
-- [ ] T019.5 [P] [US2] Measure RLS enablement time in scripts/verify-security.sh
+- [ ] T019.5 [P] [US2] Measure RLS enablement time in scripts/verify/security-verification.sh
 
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work independently
 
