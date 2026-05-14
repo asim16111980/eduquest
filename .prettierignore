@@ -1,0 +1,54 @@
+# Build outputs
+dist/
+build/
+out/
+.next/
+.nuxt/
+
+# Coverage
+coverage/
+*.lcov
+.nyc_output
+
+# Dependencies
+node_modules/
+
+# Environment variables
+.env*
+.railway/env
+
+# Supabase
+.supabase/
+.supabase_project_ref
+.supabase_config
+.supabase_db_password
+.project_linked
+.setup_complete
+
+# IDEs and editors
+.vscode/
+.idea/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+temp/
+
+# Logs
+*.log
+
+# Package manager files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Testing
+.jest/
+
+# Documentation
+docs/api/
