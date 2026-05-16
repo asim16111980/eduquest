@@ -133,12 +133,12 @@ description: "Task list for Database Bootstrap Phase 0A implementation"
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [ ] T031 [P] Update quickstart.md with verification steps in specs/001-db-bootstrap/quickstart.md
-- [ ] T032 [P] Create comprehensive setup documentation in docs/
-- [ ] T033 Create troubleshooting guide in docs/troubleshooting.md
-- [ ] T034 [P] Add error handling improvements across all scripts
-- [ ] T035 Create deployment automation script in scripts/deploy.sh
-- [ ] T036 [P] Add comprehensive test coverage for all verification scripts
+- [X] T031 [P] Update quickstart.md with verification steps in specs/001-db-bootstrap/quickstart.md
+- [X] T032 [P] Create comprehensive setup documentation in docs/
+- [X] T033 Create troubleshooting guide in docs/troubleshooting.md
+- [X] T034 [P] Add error handling improvements across all scripts
+- [X] T035 Create deployment automation script in scripts/deploy.sh
+- [X] T036 [P] Add comprehensive test coverage for all verification scripts
 
 ---
 
