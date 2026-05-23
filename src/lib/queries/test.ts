@@ -13,7 +13,9 @@ export async function testConnection() {
       .maybeSingle()
 
     if (error) {
-      throw new DatabaseError(`Database query failed: ${error.message}`)
+      // Log the raw error for debugging but don't expose to UI
+      console.error('Database query error:', error)
+      throw new DatabaseError('Database query failed')
     }
 
     // Null data is acceptable for connectivity check
@@ -43,7 +45,9 @@ export async function getUserSession() {
     const { data: { user }, error } = await supabase.auth.getUser()
 
     if (error) {
-      throw new DatabaseError(`Auth check failed: ${error.message}`)
+      // Log the raw error for debugging but don't expose to UI
+      console.error('Auth check error:', error)
+      throw new DatabaseError('Auth check failed')
     }
 
     return {
