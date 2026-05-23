@@ -1,4 +1,3 @@
-'use server'
 
 import { testConnection } from '@/lib/queries/test'
 import { EduQuestError } from '@/lib/errors'
@@ -6,7 +5,7 @@ import { EduQuestError } from '@/lib/errors'
 interface TestResult {
   success: boolean
   message: string
-  data?: any
+  data?: unknown
   timestamp: string
 }
 
@@ -24,6 +23,12 @@ export async function TestServerComponent() {
       connectionResult = {
         success: false,
         message: error.message,
+        timestamp: new Date().toISOString(),
+      }
+    } else {
+      connectionResult = {
+        success: false,
+        message: 'Failed to connect to server',
         timestamp: new Date().toISOString(),
       }
     }

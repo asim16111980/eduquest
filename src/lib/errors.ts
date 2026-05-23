@@ -3,7 +3,7 @@ export class EduQuestError extends Error {
     message: string,
     public code: string,
     public statusCode: number = 500,
-    public details?: Record<string, any>
+    public details?: Record<string, unknown>
   ) {
     super(message)
     this.name = 'EduQuestError'
@@ -28,6 +28,7 @@ export class ValidationError extends EduQuestError {
   constructor(message: string, public field?: string) {
     super(message, 'VALIDATION_ERROR', 400)
     this.name = 'ValidationError'
+    this.details = { field }
   }
 }
 

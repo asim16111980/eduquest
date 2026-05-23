@@ -236,7 +236,7 @@ export type UserRole = 'super_admin' | 'content_manager' | 'teacher' | 'viewer' 
 ## State Transitions
 
 ### User Profile States
-```
+```text
 Active → Inactive
   Trigger: super_admin sets is_active = false
   Effect: User cannot log in, but data preserved
@@ -247,7 +247,7 @@ Inactive → Active
 ```
 
 ### Session States
-```
+```text
 Valid → Expired
   Trigger: expires_at < NOW()
   Effect: User must re-authenticate

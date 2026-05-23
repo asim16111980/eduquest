@@ -10,10 +10,19 @@ export async function testConnection() {
       .from('profiles')
       .select('id, email, created_at')
       .limit(1)
-      .single()
+      .maybeSingle()
 
     if (error) {
       throw new DatabaseError(`Database query failed: ${error.message}`)
+    }
+
+    // Null data is acceptable for connectivity check
+    if (data === null) {
+      return {
+        success: true,
+        data: null,
+        message: 'Database connection successful (no data returned)',
+      }
     }
 
     return {

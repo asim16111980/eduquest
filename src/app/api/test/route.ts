@@ -22,11 +22,12 @@ export async function GET() {
   } catch (error) {
     console.error('Test API error:', error)
 
+    console.error('Test API error details:', error)
     return NextResponse.json(
       {
         success: false,
         message: 'Supabase connection failed',
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: 'Internal server error',
         timestamp: new Date().toISOString(),
       },
       { status: 500 }
