@@ -1,6 +1,7 @@
 
 import { testConnection } from '@/lib/queries/test'
 import { EduQuestError } from '@/lib/errors'
+import React, { ReactNode } from 'react'
 
 interface TestResult {
   success: boolean
@@ -53,7 +54,7 @@ export async function TestServerComponent() {
               </span>
             </div>
             <p className="mb-2">{connectionResult.message}</p>
-            {connectionResult.data && (
+            {(connectionResult.data as any) && (
               <pre className="text-sm bg-gray-100 p-2 rounded mt-2 overflow-auto">
                 {JSON.stringify(connectionResult.data, null, 2)}
               </pre>
