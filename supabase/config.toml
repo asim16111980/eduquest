@@ -4,6 +4,11 @@
 # working directory name when running `supabase init`.
 project_id = "eduquest"
 
+# Linked remote project configuration
+[project]
+# Reference ID of the linked remote project
+ref = "fjgsgtiivtuwhpmojflg"
+
 [api]
 enabled = true
 # Port to use for the API URL.

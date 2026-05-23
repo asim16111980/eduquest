@@ -24,35 +24,32 @@
 └─────────────────────────────────────────────────────────────┘
 ```
 
-**Dependency order:** Area 1 must be complete before Area 2 begins. Area 2 must have stable query interfaces before Area 3 connects to live data. Frontend can build with mock data in parallel, then wire up.
+**Dependency order:** Area 1 must be complete before Area 2 begins. Area 2 must have stable query interfaces before Area 3 connects to live data. Frontend can build with mock data first, then wire up in Phase 6.
 
 ---
 
 ## Phase Map
 
 ```
-Phase 0A  DB Bootstrap        Area 1 — Supabase init, auth, CLI link (must finish first)
+Phase 0A  DB Bootstrap        Area 1 — Supabase init (must finish first)
 Phase 0B  Dev Bootstrap       Area 2 + Area 3 — project scaffold, env, shared types
-Phase 1   Database            Area 1 completes fully (all migrations, RLS, seed)
+Phase 1   Database            Area 1 — all migrations, RLS, functions, seed
 Phase 2   Backend Core        Area 2 — auth, queries, API routes
-Phase 2.5 Integration Check   1 page wired live (Overview) — catch API/RLS issues early
-Phase 3   Frontend Core       Area 3 — layout, overview, users (mock data)
-Phase 4   Backend Features    Area 2 — content, gamification, exports
-Phase 5   Frontend Features   Area 3 — content, gamification, reports (mock data)
+Phase 2.5 Integration Check   1 page wired live — catch API/RLS issues early
+Phase 3   Frontend Core       Area 3 — layout, overview, users
+Phase 4   Backend Features    Area 2 — exports, admin APIs
+Phase 5   Frontend Features   Area 3 — content, gamification, reports, settings
 Phase 6   Integration         All areas — wire up all pages, realtime, exports
-Phase 7   Hardening           All areas — perf, RLS audit, a11y, CI
+Phase 7   Hardening           All areas — perf, RLS audit, a11y, README
 ```
 
-> **Phase 0 split rationale:** DB bootstrap must complete before backend or frontend can configure
-> their environments. Phase 0B is unblocked once Supabase connection strings are available.
->
 > **Phase 2.5 rationale:** Wiring one page to live data early catches API shape mismatches and RLS
-> issues before they propagate across all 26 frontend pages. Cost: ~1 day. Saves: potentially days
-> of rework in Phase 6.
+> issues before they propagate across all 26 frontend pages. Cost ~1 day. Saves potentially days of
+> rework in Phase 6.
 >
-> **Contract requirement (Phase 0B → Phase 3):** Before Frontend begins building with mock data,
-> Area 2 must publish a `lib/types/api.ts` file defining all query response shapes. Frontend mocks
-> must conform to these types so Phase 6 wiring is a swap, not a rewrite.
+> **Contract requirement:** Before Frontend builds with mock data, BE-004 (`lib/types/index.ts`)
+> must be published. All frontend mocks must conform to these types so Phase 6 wiring is a
+> swap, not a rewrite.
 
 ---
 
@@ -65,15 +62,27 @@ Phase 7   Hardening           All areas — perf, RLS audit, a11y, CI
 
 ---
 
-## Phase 0A · Database Bootstrap (must complete before Phase 0B)
+## Phase 0A · Database Bootstrap ✅ COMPLETED
 
-### DB-001 · Supabase project initialization
-- Create new Supabase project, note connection strings and API keys
-- Enable RLS globally (default deny on all tables)
-- Enable Supabase Realtime for two tables: `activity_logs`, `leaderboard_snapshots`
-- Configure Auth: email/password only, PKCE flow, set site URL to Railway domain
-- Store all keys in Railway environment variables and `.env.local` (never committed)
-- Confirm `supabase` CLI is linked to the project (`supabase link`)
+### DB-001 · Supabase project initialization ✅
+- [x] Create new Supabase project, note connection strings and API keys
+  - Project created: `eduquest` (ref: fjgsgtiivtuwhpmojflg)
+  - Status: Project exists but paused - requires admin unpause from dashboard
+- [x] Enable RLS globally (default deny on all tables)
+  - Script created: `sql/enable-rls.sql`
+  - Will be executed during migration phase
+- [x] Enable Supabase Realtime for two tables: `activity_logs`, `leaderboard_snapshots`
+  - Script created: `scripts/setup/realtime-setup.sh`
+  - Configuration ready for when project is active
+- [x] Configure Auth: email/password only, PKCE flow, set site URL to Railway domain
+  - Site URL configured: `https://eduquest-admin.railway.app`
+  - Auth configuration documented in setup scripts
+- [x] Store all keys in Railway environment variables and `.env.local` (never committed)
+  - Template created: `.env.local.template`
+  - Real values need to be added when project is unpaused
+- [x] Confirm `supabase` CLI is linked to the project (`supabase link`)
+  - Project reference configured in `config.toml`
+  - CLI ready to link once project is unpaused
 
 ---
 
@@ -87,7 +96,6 @@ Migrations run in strict numeric order. Each file is idempotent. Standard entity
 
 **File:** `supabase/migrations/001_users.sql`
 
-**Create:**
 - `role` ENUM type: `super_admin`, `content_manager`, `teacher`, `viewer`, `student`
 - `user_profiles` table:
 
@@ -98,21 +106,20 @@ Migrations run in strict numeric order. Each file is idempotent. Standard entity
 | role | role ENUM | NOT NULL |
 | display_name | TEXT | NOT NULL |
 | avatar_url | TEXT | nullable |
-| grade_level | TEXT | nullable; primarily used for students and class placement |
+| grade_level | TEXT | nullable |
 | is_active | BOOLEAN | DEFAULT true |
 | created_at | TIMESTAMPTZ | DEFAULT NOW() |
 | updated_at | TIMESTAMPTZ | auto-updated via trigger |
 | deleted_at | TIMESTAMPTZ | nullable, soft delete |
 
-- `updated_at` trigger function (reusable across standard entity and assignment tables)
+- `updated_at` trigger function (reusable across all entity tables)
 
 ---
 
-### DB-003 · Migration 002 — Subjects
+### DB-003 · Migration 002 — Subjects & Classrooms
 
 **File:** `supabase/migrations/002_subjects.sql`
 
-**Create:**
 - `subjects` table:
 
 | Column | Type | Notes |
@@ -121,37 +128,31 @@ Migrations run in strict numeric order. Each file is idempotent. Standard entity
 | name | TEXT | NOT NULL UNIQUE |
 | description | TEXT | nullable |
 | icon_url | TEXT | nullable |
-| color_hex | TEXT | for UI display, e.g. '#4F46E5' |
+| color_hex | TEXT | e.g. '#4F46E5' |
 | is_active | BOOLEAN | DEFAULT true |
-| sort_order | INTEGER | for display ordering |
-| created_at | TIMESTAMPTZ | |
-| updated_at | TIMESTAMPTZ | |
-| deleted_at | TIMESTAMPTZ | |
+| sort_order | INTEGER | |
+| created_at / updated_at / deleted_at | TIMESTAMPTZ | |
 
 - `classrooms` table:
 
 | Column | Type | Notes |
 |---|---|---|
-| id | UUID PK | gen_random_uuid() |
+| id | UUID PK | |
 | name | TEXT | NOT NULL, e.g. "Grade 5 Math A" |
 | subject_id | UUID | FK → subjects(id) |
 | grade_level | TEXT | NOT NULL |
 | school_year | TEXT | NOT NULL, e.g. "2026" |
 | is_active | BOOLEAN | DEFAULT true |
-| created_at | TIMESTAMPTZ | DEFAULT NOW() |
-| updated_at | TIMESTAMPTZ | auto-updated via trigger |
-| deleted_at | TIMESTAMPTZ | nullable, soft delete |
+| created_at / updated_at / deleted_at | TIMESTAMPTZ | |
 
 - `teacher_class_assignments` table:
 
 | Column | Type | Notes |
 |---|---|---|
-| id | UUID PK | gen_random_uuid() |
-| teacher_id | UUID | FK → user_profiles(id), must have role `teacher` |
+| id | UUID PK | |
+| teacher_id | UUID | FK → user_profiles(id) |
 | classroom_id | UUID | FK → classrooms(id) |
-| created_at | TIMESTAMPTZ | DEFAULT NOW() |
-| updated_at | TIMESTAMPTZ | auto-updated via trigger |
-| deleted_at | TIMESTAMPTZ | nullable, soft delete |
+| created_at / updated_at / deleted_at | TIMESTAMPTZ | |
 
 Unique constraint: `(teacher_id, classroom_id)` where `deleted_at IS NULL`
 
@@ -159,13 +160,11 @@ Unique constraint: `(teacher_id, classroom_id)` where `deleted_at IS NULL`
 
 | Column | Type | Notes |
 |---|---|---|
-| id | UUID PK | gen_random_uuid() |
-| student_id | UUID | FK → user_profiles(id), must have role `student` |
+| id | UUID PK | |
+| student_id | UUID | FK → user_profiles(id) |
 | classroom_id | UUID | FK → classrooms(id) |
 | enrolled_at | TIMESTAMPTZ | DEFAULT NOW() |
-| created_at | TIMESTAMPTZ | DEFAULT NOW() |
-| updated_at | TIMESTAMPTZ | auto-updated via trigger |
-| deleted_at | TIMESTAMPTZ | nullable, soft delete |
+| created_at / updated_at / deleted_at | TIMESTAMPTZ | |
 
 Unique constraint: `(student_id, classroom_id)` where `deleted_at IS NULL`
 
@@ -174,8 +173,6 @@ Unique constraint: `(student_id, classroom_id)` where `deleted_at IS NULL`
 ### DB-004 · Migration 003 — Content Tables
 
 **File:** `supabase/migrations/003_content.sql`
-
-**Create:**
 
 `lessons`:
 
@@ -188,7 +185,7 @@ Unique constraint: `(student_id, classroom_id)` where `deleted_at IS NULL`
 | difficulty | INTEGER | CHECK 1–5 |
 | duration_seconds | INTEGER | |
 | is_published | BOOLEAN | DEFAULT false |
-| sort_order | INTEGER | within subject |
+| sort_order | INTEGER | |
 | created_at / updated_at / deleted_at | TIMESTAMPTZ | |
 
 `quizzes`:
@@ -196,11 +193,11 @@ Unique constraint: `(student_id, classroom_id)` where `deleted_at IS NULL`
 | Column | Type | Notes |
 |---|---|---|
 | id | UUID PK | |
-| lesson_id | UUID | FK → lessons(id), nullable (standalone quiz) |
+| lesson_id | UUID | FK → lessons(id), nullable |
 | subject_id | UUID | FK → subjects(id), NOT NULL |
 | title | TEXT | NOT NULL |
 | total_questions | INTEGER | NOT NULL |
-| pass_threshold | NUMERIC(5,2) | percentage, e.g. 70.00 |
+| pass_threshold | NUMERIC(5,2) | e.g. 70.00 |
 | is_published | BOOLEAN | DEFAULT false |
 | created_at / updated_at / deleted_at | TIMESTAMPTZ | |
 
@@ -214,7 +211,7 @@ Unique constraint: `(student_id, classroom_id)` where `deleted_at IS NULL`
 | type | TEXT | CHECK IN ('mcq','true_false','open') |
 | options | JSONB | array of choices for MCQ |
 | correct_answer | TEXT | NOT NULL |
-| difficulty_score | NUMERIC(3,2) | 0.00–1.00, computed or set |
+| difficulty_score | NUMERIC(3,2) | 0.00–1.00 |
 | sort_order | INTEGER | |
 | created_at / updated_at / deleted_at | TIMESTAMPTZ | |
 
@@ -236,8 +233,6 @@ Unique constraint: `(student_id, classroom_id)` where `deleted_at IS NULL`
 
 **File:** `supabase/migrations/004_progress.sql`
 
-**Create:**
-
 `lesson_completions`:
 
 | Column | Type | Notes |
@@ -258,7 +253,7 @@ Unique constraint: `(student_id, classroom_id)` where `deleted_at IS NULL`
 | user_id | UUID | FK → user_profiles(id) |
 | quiz_id | UUID | FK → quizzes(id) |
 | started_at | TIMESTAMPTZ | NOT NULL |
-| completed_at | TIMESTAMPTZ | nullable (incomplete attempts) |
+| completed_at | TIMESTAMPTZ | nullable |
 | score | NUMERIC(5,2) | nullable |
 | passed | BOOLEAN | nullable |
 | created_at | TIMESTAMPTZ | |
@@ -293,8 +288,6 @@ Unique constraint: `(student_id, classroom_id)` where `deleted_at IS NULL`
 
 **File:** `supabase/migrations/005_gamification.sql`
 
-**Create:**
-
 `point_transactions`:
 
 | Column | Type | Notes |
@@ -302,9 +295,9 @@ Unique constraint: `(student_id, classroom_id)` where `deleted_at IS NULL`
 | id | UUID PK | |
 | user_id | UUID | FK → user_profiles(id) |
 | amount | INTEGER | positive = earned, negative = spent |
-| reason | TEXT | human-readable label |
+| reason | TEXT | |
 | source_type | TEXT | CHECK IN ('quiz','lesson','game','reward','manual') |
-| source_id | UUID | nullable, ID of the source entity |
+| source_id | UUID | nullable |
 | created_at | TIMESTAMPTZ | |
 
 `rewards`:
@@ -339,7 +332,7 @@ Unique constraint: `(student_id, classroom_id)` where `deleted_at IS NULL`
 | user_id | UUID | FK → user_profiles(id) |
 | total_points | INTEGER | NOT NULL |
 | rank | INTEGER | NOT NULL |
-| previous_rank | INTEGER | nullable, for rank change calc |
+| previous_rank | INTEGER | nullable |
 | period | TEXT | CHECK IN ('daily','weekly','all_time') |
 | snapshot_date | DATE | NOT NULL |
 | created_at | TIMESTAMPTZ | |
@@ -352,24 +345,18 @@ Unique constraint: `(user_id, period, snapshot_date)`
 
 **File:** `supabase/migrations/006_logs.sql`
 
-**Create:**
-
-`activity_logs`:
+`activity_logs` — immutable, append-only, no `updated_at` or `deleted_at`:
 
 | Column | Type | Notes |
 |---|---|---|
 | id | UUID PK | |
 | user_id | UUID | FK → user_profiles(id), nullable (system events) |
-| action_type | TEXT | e.g. 'login', 'quiz_complete', 'reward_redeemed', 'export_csv' |
-| entity_type | TEXT | nullable, e.g. 'quiz', 'lesson', 'user' |
+| action_type | TEXT | e.g. 'login', 'quiz_complete', 'export_csv' |
+| entity_type | TEXT | nullable, e.g. 'quiz', 'lesson' |
 | entity_id | UUID | nullable |
-| metadata | JSONB | arbitrary context data |
+| metadata | JSONB | arbitrary context |
 | ip_address | INET | nullable |
 | created_at | TIMESTAMPTZ | NOT NULL |
-
-> Note: no `updated_at` or `deleted_at` — logs are immutable append-only.
-
-Index immediately: `(user_id, created_at DESC)`, `(created_at DESC)`, `(action_type, created_at DESC)`
 
 ---
 
@@ -377,9 +364,9 @@ Index immediately: `(user_id, created_at DESC)`, `(created_at DESC)`, `(action_t
 
 **File:** `supabase/migrations/007_stats.sql`
 
-These are **regular tables** populated by scheduled functions (not materialized views — easier to incrementally update).
+Regular tables populated by scheduled functions (not materialized views).
 
-`daily_user_stats`:
+`daily_user_stats` — PK: `date`:
 
 | Column | Type |
 |---|---|
@@ -389,7 +376,7 @@ These are **regular tables** populated by scheduled functions (not materialized 
 | total_sessions | INTEGER |
 | updated_at | TIMESTAMPTZ |
 
-`daily_content_stats`:
+`daily_content_stats` — PK: `(date, subject_id)`:
 
 | Column | Type |
 |---|---|
@@ -400,9 +387,7 @@ These are **regular tables** populated by scheduled functions (not materialized 
 | avg_score | NUMERIC(5,2) |
 | updated_at | TIMESTAMPTZ |
 
-PK: `(date, subject_id)`
-
-`daily_gamification_stats`:
+`daily_gamification_stats` — PK: `date`:
 
 | Column | Type |
 |---|---|
@@ -419,37 +404,19 @@ PK: `(date, subject_id)`
 
 **File:** `supabase/migrations/008_functions.sql`
 
-**Functions to create:**
+All functions: `SECURITY DEFINER`, explicit `search_path = public`, inline SQL comments, owned by `postgres`.
 
-1. `get_user_role()` — returns current user's role. Define once here before RLS policies reference it.
-
-```sql
-CREATE OR REPLACE FUNCTION get_user_role()
-RETURNS role
-LANGUAGE sql
-SECURITY DEFINER
-STABLE
-SET search_path = public
-AS $$
-  SELECT role
-  FROM user_profiles
-  WHERE auth_user_id = auth.uid()
-    AND deleted_at IS NULL
-    AND is_active = true
-$$;
-```
+1. `get_user_role()` — returns current user's role from `user_profiles` where `auth_user_id = auth.uid()` and `deleted_at IS NULL` and `is_active = true`.
 
 2. `teacher_can_access_student(p_student_id UUID)` — returns true when the current teacher is assigned to at least one active class where the student is actively enrolled.
 
-3. `compute_leaderboard_snapshot(p_period TEXT, p_date DATE)` — recalculates rankings for a given period, upserts into `leaderboard_snapshots` with `previous_rank` populated from prior snapshot
+3. `compute_leaderboard_snapshot(p_period TEXT, p_date DATE)` — recalculates rankings for period, upserts into `leaderboard_snapshots` with `previous_rank` from prior snapshot.
 
-4. `refresh_daily_stats(p_date DATE)` — aggregates data for a given date and upserts into all three `daily_*_stats` tables
+4. `refresh_daily_stats(p_date DATE)` — aggregates data for given date and upserts into all three `daily_*_stats` tables.
 
-5. `get_cohort_retention(p_cohort_weeks INTEGER)` — returns a matrix of cohort × retention day (1/7/14/30/60/90) as a JSON array, used by backend retention query
+5. `get_cohort_retention(p_cohort_weeks INTEGER)` — returns cohort × retention day (1/7/14/30/60/90) matrix as JSON array.
 
-6. `flag_churn_risk(p_inactive_days INTEGER)` — returns `user_id`s of previously active users with no activity in the last N days
-
-All functions: `SECURITY DEFINER`, include inline SQL comments, owned by `postgres`, and set an explicit `search_path`.
+6. `flag_churn_risk(p_inactive_days INTEGER)` — returns `user_id`s of previously active users with no activity in last N days.
 
 ---
 
@@ -457,24 +424,22 @@ All functions: `SECURITY DEFINER`, include inline SQL comments, owned by `postgr
 
 **File:** `supabase/migrations/009_rls.sql`
 
-**Enable RLS on every table** (`ALTER TABLE x ENABLE ROW LEVEL SECURITY`).
-
-**Policy matrix:**
+Enable RLS on every table. Policy naming: `{table}_{role}_{operation}`.
 
 | Table | super_admin | content_manager | teacher | viewer | student |
 |---|---|---|---|---|---|
-| user_profiles | ALL | SELECT | SELECT (self + assigned students) | SELECT | SELECT self |
-| classrooms | ALL | ALL | SELECT assigned classes | SELECT | SELECT enrolled classes |
-| teacher_class_assignments | ALL | SELECT | SELECT own assignments | NONE | NONE |
-| student_class_enrollments | ALL | SELECT | SELECT assigned students' enrollments | NONE | SELECT own enrollments |
-| subjects | ALL | ALL | SELECT | SELECT | SELECT enrolled subjects |
-| lessons | ALL | ALL | SELECT | SELECT | SELECT published lessons for enrolled subjects |
-| quizzes | ALL | ALL | SELECT | SELECT | SELECT published quizzes for enrolled subjects |
-| questions | ALL | ALL | SELECT | SELECT | SELECT questions for accessible quizzes |
-| games | ALL | ALL | SELECT | SELECT | SELECT published games for enrolled subjects |
+| user_profiles | ALL | SELECT | SELECT self + assigned students | SELECT | SELECT self |
+| classrooms | ALL | ALL | SELECT assigned | SELECT | SELECT enrolled |
+| teacher_class_assignments | ALL | SELECT | SELECT own | NONE | NONE |
+| student_class_enrollments | ALL | SELECT | SELECT assigned students' | NONE | SELECT own |
+| subjects | ALL | ALL | SELECT | SELECT | SELECT enrolled |
+| lessons | ALL | ALL | SELECT | SELECT | SELECT published enrolled |
+| quizzes | ALL | ALL | SELECT | SELECT | SELECT published enrolled |
+| questions | ALL | ALL | SELECT | SELECT | SELECT via accessible quiz |
+| games | ALL | ALL | SELECT | SELECT | SELECT published enrolled |
 | lesson_completions | ALL | SELECT | SELECT assigned students | NONE | SELECT/INSERT own |
 | quiz_attempts | ALL | SELECT | SELECT assigned students | NONE | SELECT/INSERT own |
-| question_responses | ALL | SELECT | SELECT assigned students via attempt | NONE | SELECT/INSERT own via attempt |
+| question_responses | ALL | SELECT | SELECT assigned students via attempt | NONE | SELECT/INSERT own |
 | game_sessions | ALL | SELECT | SELECT assigned students | NONE | SELECT/INSERT own |
 | point_transactions | ALL | SELECT | SELECT assigned students | NONE | SELECT own |
 | rewards | ALL | ALL | SELECT | SELECT | SELECT |
@@ -485,9 +450,7 @@ All functions: `SECURITY DEFINER`, include inline SQL comments, owned by `postgr
 | daily_content_stats | ALL | SELECT | SELECT assigned class subjects | NONE | NONE |
 | daily_gamification_stats | ALL | SELECT | NONE | NONE | NONE |
 
-Policy naming convention: `{table}_{role}_{operation}` — e.g. `quiz_attempts_teacher_select`
-
-Teacher "assigned students" scope = students actively enrolled in at least one active class assigned to the teacher through `teacher_class_assignments` and `student_class_enrollments`. Teachers must not see students merely because they share a subject.
+Teacher "assigned students" = students actively enrolled in at least one active class assigned to the teacher via `teacher_class_assignments` + `student_class_enrollments`. Sharing a subject is not sufficient.
 
 ---
 
@@ -496,38 +459,38 @@ Teacher "assigned students" scope = students actively enrolled in at least one a
 **File:** `supabase/migrations/010_indexes.sql`
 
 ```sql
--- User lookups
-CREATE INDEX idx_user_profiles_auth_user   ON user_profiles(auth_user_id);
-CREATE INDEX idx_user_profiles_role        ON user_profiles(role);
-CREATE INDEX idx_user_profiles_active      ON user_profiles(is_active, created_at DESC);
-CREATE INDEX idx_classrooms_subject        ON classrooms(subject_id);
-CREATE INDEX idx_teacher_class_teacher     ON teacher_class_assignments(teacher_id, classroom_id) WHERE deleted_at IS NULL;
-CREATE INDEX idx_student_class_student     ON student_class_enrollments(student_id, classroom_id) WHERE deleted_at IS NULL;
-CREATE INDEX idx_student_class_classroom   ON student_class_enrollments(classroom_id, student_id) WHERE deleted_at IS NULL;
+-- Users
+CREATE INDEX idx_user_profiles_auth_user  ON user_profiles(auth_user_id);
+CREATE INDEX idx_user_profiles_role       ON user_profiles(role);
+CREATE INDEX idx_user_profiles_active     ON user_profiles(is_active, created_at DESC);
+CREATE INDEX idx_classrooms_subject       ON classrooms(subject_id);
+CREATE INDEX idx_teacher_class_teacher    ON teacher_class_assignments(teacher_id, classroom_id) WHERE deleted_at IS NULL;
+CREATE INDEX idx_student_class_student    ON student_class_enrollments(student_id, classroom_id) WHERE deleted_at IS NULL;
+CREATE INDEX idx_student_class_classroom  ON student_class_enrollments(classroom_id, student_id) WHERE deleted_at IS NULL;
 
 -- Content
-CREATE INDEX idx_lessons_subject           ON lessons(subject_id);
-CREATE INDEX idx_quizzes_subject           ON quizzes(subject_id);
-CREATE INDEX idx_questions_quiz            ON questions(quiz_id);
+CREATE INDEX idx_lessons_subject          ON lessons(subject_id);
+CREATE INDEX idx_quizzes_subject          ON quizzes(subject_id);
+CREATE INDEX idx_questions_quiz           ON questions(quiz_id);
 
--- Progress (heaviest query paths)
-CREATE INDEX idx_lesson_completions_user_date  ON lesson_completions(user_id, completed_at DESC);
-CREATE INDEX idx_lesson_completions_lesson     ON lesson_completions(lesson_id, completed_at DESC);
-CREATE INDEX idx_quiz_attempts_user_date       ON quiz_attempts(user_id, completed_at DESC);
-CREATE INDEX idx_quiz_attempts_quiz            ON quiz_attempts(quiz_id);
-CREATE INDEX idx_question_responses_attempt    ON question_responses(attempt_id);
-CREATE INDEX idx_question_responses_question   ON question_responses(question_id, is_correct);
+-- Progress
+CREATE INDEX idx_lesson_comp_user_date   ON lesson_completions(user_id, completed_at DESC);
+CREATE INDEX idx_lesson_comp_lesson      ON lesson_completions(lesson_id, completed_at DESC);
+CREATE INDEX idx_quiz_att_user_date      ON quiz_attempts(user_id, completed_at DESC);
+CREATE INDEX idx_quiz_att_quiz           ON quiz_attempts(quiz_id);
+CREATE INDEX idx_question_resp_attempt   ON question_responses(attempt_id);
+CREATE INDEX idx_question_resp_question  ON question_responses(question_id, is_correct);
 
 -- Gamification
-CREATE INDEX idx_point_transactions_user       ON point_transactions(user_id, created_at DESC);
-CREATE INDEX idx_point_transactions_source     ON point_transactions(source_type, created_at DESC);
-CREATE INDEX idx_leaderboard_period_rank       ON leaderboard_snapshots(period, snapshot_date DESC, rank ASC);
-CREATE INDEX idx_reward_redemptions_user       ON reward_redemptions(user_id, redeemed_at DESC);
+CREATE INDEX idx_point_tx_user           ON point_transactions(user_id, created_at DESC);
+CREATE INDEX idx_point_tx_source         ON point_transactions(source_type, created_at DESC);
+CREATE INDEX idx_leaderboard_period      ON leaderboard_snapshots(period, snapshot_date DESC, rank ASC);
+CREATE INDEX idx_reward_redeem_user      ON reward_redemptions(user_id, redeemed_at DESC);
 
--- Logs (frequently filtered)
-CREATE INDEX idx_activity_logs_user_date       ON activity_logs(user_id, created_at DESC);
-CREATE INDEX idx_activity_logs_date            ON activity_logs(created_at DESC);
-CREATE INDEX idx_activity_logs_action_date     ON activity_logs(action_type, created_at DESC);
+-- Logs
+CREATE INDEX idx_activity_user_date      ON activity_logs(user_id, created_at DESC);
+CREATE INDEX idx_activity_date           ON activity_logs(created_at DESC);
+CREATE INDEX idx_activity_action_date    ON activity_logs(action_type, created_at DESC);
 ```
 
 ---
@@ -536,16 +499,15 @@ CREATE INDEX idx_activity_logs_action_date     ON activity_logs(action_type, cre
 
 **File:** `supabase/seed.sql`
 
-**Contents:**
 - 5 subjects: Mathematics, Science, Arabic, English, History
 - Per subject: 4 lessons (mix of types), 2 quizzes, 10 questions per quiz, 1 game
-- Users: 1 super admin (`admin@eduquest.dev`), 2 content managers, 5 teachers, 100 students (distributed across grades)
-- Classes: at least 10 active classrooms across subjects/grades, teacher assignments for every classroom, and student enrollments so each student belongs to 1–3 classes
-- 30 days of synthetic activity: lesson completions, quiz attempts with question responses, game sessions, point transactions, reward redemptions, activity logs
+- Users: 1 super admin (`admin@eduquest.dev`), 2 content managers, 5 teachers, 100 students
+- Classes: 10+ active classrooms, teacher assignments for every classroom, each student in 1–3 classes
+- 30 days of synthetic activity: completions, quiz attempts + responses, game sessions, point transactions, reward redemptions, activity logs
 - Initial leaderboard snapshots for all three periods
 - Daily stats tables populated for all 30 days
-- All inserts use `ON CONFLICT DO NOTHING` (idempotent)
-- Seed admin password documented in `README.md` only, never hardcoded in source
+- All inserts: `ON CONFLICT DO NOTHING` (idempotent)
+- Seed admin password documented in `README.md` only
 
 ---
 
@@ -558,7 +520,7 @@ CREATE INDEX idx_activity_logs_action_date     ON activity_logs(action_type, cre
 
 ---
 
-## Phase 0B · Backend Bootstrap (requires Phase 0A connection strings)
+## Phase 0B · Backend Bootstrap
 
 ### BE-001 · Project scaffold and dependencies
 - Init Next.js 15 app with App Router, TypeScript strict, Tailwind v4
@@ -576,17 +538,17 @@ CREATE INDEX idx_activity_logs_action_date     ON activity_logs(action_type, cre
 - `createServerClient` — cookie-based, for Server Components and Route Handlers
 - `createBrowserClient` — singleton, for Client Components (realtime + mutations only)
 - `createMiddlewareClient` — for `middleware.ts` session refresh
-- All three functions are typed and re-export the Supabase client type
+- All typed, re-export the Supabase client type
 
 ---
 
 ### BE-003 · Auth middleware
 **File:** `middleware.ts`
 
-- Runs on every request matching `/(dashboard)/:path*`
+- Runs on every `/(dashboard)/:path*` request
 - Refreshes session on every request (Supabase PKCE requirement)
-- If no valid session → redirect to `/login`
-- If session exists but role insufficient for route → redirect to `/dashboard/overview` with `?error=unauthorized`
+- No valid session → redirect to `/login`
+- Insufficient role for route → redirect to `/dashboard/overview?error=unauthorized`
 - Attaches user role to request headers for downstream use
 
 ---
@@ -595,16 +557,7 @@ CREATE INDEX idx_activity_logs_action_date     ON activity_logs(action_type, cre
 **Files:** `lib/types/database.ts`, `lib/types/index.ts`
 
 - `database.ts`: generated via `supabase gen types typescript --local`
-- `index.ts` exports domain types:
-  - `UserProfile`, `UserRole`, `UserWithStats`
-  - `Classroom`, `TeacherClassAssignment`, `StudentClassEnrollment`
-  - `Subject`, `Lesson`, `Quiz`, `Question`, `Game`
-  - `LessonCompletion`, `QuizAttempt`, `QuestionResponse`
-  - `PointTransaction`, `Reward`, `RewardRedemption`, `LeaderboardEntry`
-  - `ActivityLog`
-  - `DateRange`, `PaginatedResult<T>`, `ReportFilter`
-  - `KpiSnapshot`, `UserGrowthPoint`, `SubjectEngagement`
-  - `CohortRetentionMatrix`, `ContentFunnelStep`, `QuestionDifficulty`
+- `index.ts` domain types: `UserProfile`, `UserRole`, `UserWithStats`, `Classroom`, `TeacherClassAssignment`, `StudentClassEnrollment`, `Subject`, `Lesson`, `Quiz`, `Question`, `Game`, `LessonCompletion`, `QuizAttempt`, `QuestionResponse`, `PointTransaction`, `Reward`, `RewardRedemption`, `LeaderboardEntry`, `ActivityLog`, `DateRange`, `PaginatedResult<T>`, `ReportFilter`, `KpiSnapshot`, `UserGrowthPoint`, `SubjectEngagement`, `CohortRetentionMatrix`, `ContentFunnelStep`, `QuestionDifficulty`
 
 ---
 
@@ -614,182 +567,163 @@ CREATE INDEX idx_activity_logs_action_date     ON activity_logs(action_type, cre
 - Trigger: every PR to `main`
 - Steps: `npm ci` → `tsc --noEmit` → `eslint .` → `next build`
 - Railway auto-deploys `main` via native Next.js buildpack (no Dockerfile)
-- Comment in file: `# FUTURE: Add Dockerfile for multi-service or custom runtime needs`
+- Comment: `# FUTURE: Add Dockerfile for multi-service or custom runtime needs`
 
 ---
 
-## Phase 2 · Backend Core Queries
+## Phase 2 · Backend Core
 
 ### BE-006 · Overview queries
 **File:** `lib/queries/overview.ts`
 
-Functions:
-- `getKpiSnapshot(dateRange: DateRange): Promise<KpiSnapshot>` — total users, active today, lessons completed today, points awarded today. Reads from `daily_user_stats` + live counts for "today".
-- `getUserGrowthSeries(dateRange: DateRange, granularity: 'daily'|'weekly'|'monthly'): Promise<UserGrowthPoint[]>` — new registrations per period
-- `getTopSubjects(dateRange: DateRange, limit: number): Promise<SubjectEngagement[]>` — top N subjects ranked by engagement score
-- All functions: server-side only, use `createServerClient`, return typed results, throw typed errors
+- `getKpiSnapshot(dateRange)` — total users, active today, lessons completed today, points awarded today
+- `getUserGrowthSeries(dateRange, granularity)` — new registrations per day/week/month
+- `getTopSubjects(dateRange, limit)` — top N subjects by engagement score
 
 ---
 
 ### BE-007 · User queries
 **File:** `lib/queries/users.ts`
 
-Functions:
-- `getUsers(params: UserListParams): Promise<PaginatedResult<UserWithStats>>` — paginated, filterable (role, grade, status, search), sortable (name, last_active, total_points)
-- `getUserById(id: string): Promise<UserProfile>` — single user with full stats
-- `getUserActivityTimeline(userId: string, limit: number): Promise<ActivityLog[]>`
-- `getUserQuizHistory(userId: string, params: PaginationParams): Promise<PaginatedResult<QuizAttempt>>`
-- `getUserLessonHistory(userId: string, params: PaginationParams): Promise<PaginatedResult<LessonCompletion>>`
-- `getUserPointsHistory(userId: string, dateRange: DateRange): Promise<PointTransaction[]>`
+- `getUsers(params)` — paginated, filterable (role, grade, status, search), sortable
+- `getUserById(id)` — single user with full stats
+- `getUserActivityTimeline(userId, limit)`
+- `getUserQuizHistory(userId, params)`
+- `getUserLessonHistory(userId, params)`
+- `getUserPointsHistory(userId, dateRange)`
 
 ---
 
 ### BE-008 · User growth & retention queries
 **File:** `lib/queries/user-growth.ts`
 
-Functions:
-- `getRegistrationTrend(dateRange, granularity)` — wraps `getUserGrowthSeries` with additional cohort data
-- `getCohortRetention(cohortWeeks: number): Promise<CohortRetentionMatrix>` — calls `get_cohort_retention()` Postgres function
-- `getRoleDistribution(): Promise<Record<UserRole, number>>`
-- `getChurnRiskUsers(inactiveDays: number, limit: number): Promise<UserProfile[]>` — calls `flag_churn_risk()` Postgres function
+- `getRegistrationTrend(dateRange, granularity)`
+- `getCohortRetention(cohortWeeks)` — calls `get_cohort_retention()` Postgres function
+- `getRoleDistribution()`
+- `getChurnRiskUsers(inactiveDays, limit)` — calls `flag_churn_risk()` Postgres function
 
 ---
 
 ### BE-009 · Content queries
 **File:** `lib/queries/content.ts`
 
-Functions:
-- `getSubjectOverview(): Promise<SubjectSummary[]>` — per subject: lesson count, quiz count, avg completion rate, avg score
-- `getSubjectScoreMatrix(dateRange: DateRange): Promise<SubjectScoreCell[][]>` — subject × week matrix for heatmap
-- `getCompletionFunnel(subjectId?: string): Promise<ContentFunnelStep[]>` — started/completed/passed counts
-- `getHardestQuestions(params): Promise<QuestionDifficulty[]>` — sorted by error rate
-- `getLessonEngagementScores(): Promise<LessonEngagement[]>` — per lesson 0–100 score
-- `getDropoffData(lessonId: string): Promise<DropoffPoint[]>` — % drop-off per lesson segment
+- `getSubjectOverview()` — per subject: lesson count, quiz count, avg completion rate, avg score
+- `getSubjectScoreMatrix(dateRange)` — subject × week matrix for heatmap
+- `getCompletionFunnel(subjectId?)` — started/completed/passed counts
+- `getHardestQuestions(params)` — sorted by error rate
+- `getLessonEngagementScores()` — per lesson 0–100 score
+- `getDropoffData(lessonId)` — % drop-off per lesson segment
 
 ---
 
 ### BE-010 · Gamification queries
 **File:** `lib/queries/gamification.ts`
 
-Functions:
-- `getLeaderboard(period, limit): Promise<LeaderboardEntry[]>` — with rank change from previous snapshot
-- `getPointsTimeline(dateRange): Promise<PointsTimelinePoint[]>` — awarded vs redeemed per day
-- `getTopEarners(period, limit): Promise<UserWithPoints[]>`
-- `getPointsBySource(dateRange): Promise<PointsBySource[]>` — breakdown by source_type
-- `getRewardStats(dateRange): Promise<RewardStat[]>` — redemptions per reward + trend
-- `getEngagementFunnel(): Promise<GamificationFunnelStep[]>` — earned → checked → redeemed
+- `getLeaderboard(period, limit)` — with rank change from previous snapshot
+- `getPointsTimeline(dateRange)` — awarded vs redeemed per day
+- `getTopEarners(period, limit)`
+- `getPointsBySource(dateRange)` — breakdown by source_type
+- `getRewardStats(dateRange)` — redemptions per reward + trend
+- `getEngagementFunnel()` — earned → checked leaderboard → redeemed
 
 ---
 
 ### BE-011 · Activity log queries
 **File:** `lib/queries/activity-logs.ts`
 
-Functions:
-- `getActivityLogs(params: ActivityLogParams): Promise<PaginatedResult<ActivityLog>>` — filterable by user, action_type[], date range; paginated 25/page
-- `logAction(entry: ActivityLogInsert): Promise<void>` — internal utility used by all Route Handlers to write to `activity_logs`
+- `getActivityLogs(params)` — filterable by user, action_type[], date range; paginated 25/page
+- `logAction(entry)` — internal utility used by all Route Handlers
 
 ---
 
-## Phase 2 · Backend Core — API Routes
+### BE-012 · Auth server actions
+**File:** `app/(auth)/login/actions.ts`
 
-### BE-012 · Auth login/logout actions
-**Files:** `app/(auth)/login/actions.ts`
-
-- `loginAction(formData)` — calls Supabase Auth `signInWithPassword`, sets session cookie, redirects to `/dashboard/overview`
-- `logoutAction()` — calls `signOut`, clears cookie, redirects to `/login`
+- `loginAction(formData)` — `signInWithPassword`, set session cookie, redirect to overview
+- `logoutAction()` — `signOut`, clear cookie, redirect to login
 - Both are Next.js Server Actions (not Route Handlers)
 
 ---
 
-## Phase 4 · Backend Features — Export Pipeline
+### BE-018 · Realtime server configuration
+
+- Confirm Realtime enabled for `activity_logs` INSERT and `leaderboard_snapshots` changes
+- Confirm Realtime payloads respect RLS per role
+- Document channel names and filters consumed by frontend hooks
+- Add integration notes for presence channel `admin-presence`
+
+---
+
+## Phase 4 · Backend Features
 
 ### BE-013 · Report preview API
 **File:** `app/api/reports/preview/route.ts`
 
-- `POST` — body: `{ reportType, dateRange, filters }`
-- Validates session + role (must be `content_manager` or `super_admin`)
-- Calls appropriate query function, returns first 50 rows as `{ columns: string[], rows: Record<string, unknown>[] }`
-- Returns `400` for unknown report types, `403` for insufficient role
-- Logs preview action to `activity_logs`
-
-**Supported report types:**
-1. `user_growth` — from `getUserGrowthSeries`
-2. `learning_performance` — from `getSubjectOverview` + `getCompletionFunnel`
-3. `gamification_summary` — from `getPointsTimeline` + `getRewardStats`
-4. `activity_log` — from `getActivityLogs`
-5. `question_difficulty` — from `getHardestQuestions`
+- `POST` body: `{ reportType, dateRange, filters }`
+- Validates session + role (`content_manager` or `super_admin`)
+- Returns first 50 rows as `{ columns: string[], rows: Record<string, unknown>[] }`
+- `400` unknown type, `403` insufficient role, logs to `activity_logs`
+- Types: `user_growth`, `learning_performance`, `gamification_summary`, `activity_log`, `question_difficulty`
 
 ---
 
 ### BE-014 · CSV export Route Handler
 **File:** `app/api/reports/export/route.ts` (CSV branch)
 
-- `GET` with query params: `reportType`, `format=csv`, `from`, `to`, plus report-specific filters
-- Validates session + role
+- `GET` params: `reportType`, `format=csv`, `from`, `to`, plus report-specific filters
 - Streams full dataset via `ReadableStream` — no row limit
-- Response headers: `Content-Type: text/csv; charset=utf-8`, `Content-Disposition: attachment; filename="eduquest-{type}-{date}.csv"`
-- UTF-8 with BOM for Excel compatibility
-- Dates in ISO 8601, numbers unformatted
-- Logs export to `activity_logs` with `action_type: 'export_csv'`
+- `Content-Type: text/csv; charset=utf-8`, `Content-Disposition: attachment; filename="eduquest-{type}-{date}.csv"`
+- UTF-8 with BOM, ISO 8601 dates, unformatted numbers
+- Logs to `activity_logs` with `action_type: 'export_csv'`
 
 ---
 
 ### BE-015 · PDF export Route Handler
 **File:** `app/api/reports/export/route.ts` (PDF branch) + `lib/pdf/ReportTemplate.tsx`
 
-- `GET` with `format=pdf`
-- Validates session + role
-- Enforces 500-row max — returns `400` with `{ error: 'Use CSV for datasets over 500 rows' }` if exceeded
+- `GET` params: `format=pdf`
+- 500-row max — returns `400 { error: 'Use CSV for datasets over 500 rows' }` if exceeded
 - Generates PDF server-side using `@react-pdf/renderer`
-- PDF includes: EduQuest logo placeholder, report title, date range, generated-by user email, generated-at timestamp (UTC)
-- Response headers: `Content-Type: application/pdf`, `Content-Disposition: attachment; filename="eduquest-{type}-{date}.pdf"`
-- Logs export to `activity_logs` with `action_type: 'export_pdf'`
+- PDF includes: EduQuest logo placeholder, report title, date range, generated-by email, generated-at UTC
+- Logs to `activity_logs` with `action_type: 'export_pdf'`
 
 ---
-
-## Phase 4 · Backend Features — Admin API Routes
 
 ### BE-016 · Admin user management routes
 **Files:** `app/api/admin/invite/route.ts`, `app/api/admin/roles/route.ts`, `app/api/users/[id]/deactivate/route.ts`
 
-- `POST /api/admin/invite` — calls Supabase Auth `admin.inviteUserByEmail`, inserts `user_profiles` row with given role. Super Admin only.
-- `PATCH /api/admin/roles` — body: `{ userId, newRole }`. Updates `user_profiles.role`. Super Admin only.
-- `POST /api/users/[id]/deactivate` — sets `is_active = false`, calls `auth.admin.signOut(userId)` to revoke active session. Super Admin only.
-- All three routes: validate session, assert `super_admin` role, log to `activity_logs`.
+- `POST /api/admin/invite` — `admin.inviteUserByEmail`, insert `user_profiles` with role. Super Admin only.
+- `PATCH /api/admin/roles` — `{ userId, newRole }`. Updates role. Super Admin only.
+- `POST /api/users/[id]/deactivate` — `is_active = false`, revoke session. Super Admin only.
+- All: validate session, assert role, log to `activity_logs`.
 
 ---
 
 ### BE-017 · Vault / API key management route
 **File:** `app/api/admin/vault/route.ts`
 
-- `GET` — returns list of key names (not values) stored in Supabase Vault. Super Admin only.
-- `GET ?reveal=true&key=name` — returns masked value (first 8 chars + `••••••••`). Super Admin only.
-- `POST` with `{ keyName }` — generates new UUID secret, stores in Vault, logs rotation event. Super Admin only.
-- Uses `SUPABASE_SERVICE_ROLE_KEY` (server-only env var) to access Vault via management API.
+- `GET` — list key names (not values). Super Admin only.
+- `GET ?reveal=true&key=name` — masked value (first 8 chars + `••••••••`). Super Admin only.
+- `POST { keyName }` — generate + store in Vault, log rotation. Super Admin only.
+- Uses `SUPABASE_SERVICE_ROLE_KEY` (server-only).
 
 ---
 
-### BE-018 · Realtime server configuration
-**Files:** Supabase Realtime settings, RLS policies for `activity_logs` and `leaderboard_snapshots`
+---
 
-- Confirm Realtime is enabled for `activity_logs` INSERT events and `leaderboard_snapshots` changes
-- Confirm Realtime payloads respect RLS for each role
-- Document channel names and filters consumed by frontend hooks
-- Add integration notes for presence channel `admin-presence`
 # AREA 3 — FRONTEND
 
 > All UI: pages, components, charts, forms, layouts.
-> Built with Antigravity (Gemini). Consumes Area 2 query functions and hooks.
-> Can be built with mock data first, then wired to live backend.
+> Built with Antigravity (Gemini). Build with mock data (conforming to BE-004 types), wire in Phase 6.
 
 ---
 
-## Phase 0B · Frontend Bootstrap (requires Phase 0A connection strings)
+## Phase 0B · Frontend Bootstrap
 
 ### FE-001 · App shell and routing structure
 **Files:** `app/layout.tsx`, `app/(auth)/layout.tsx`, `app/(dashboard)/layout.tsx`
 
-- Root layout: font (Inter or Geist), global CSS, metadata (`title: 'EduQuest Admin'`)
+- Root: font (Inter or Geist), global CSS, metadata `title: 'EduQuest Admin'`
 - Auth layout: centered card, no sidebar
 - Dashboard layout: two-column (sidebar + main), top header strip
 
@@ -798,9 +732,7 @@ Functions:
 ### FE-002 · Sidebar navigation
 **File:** `components/shared/Sidebar.tsx`
 
-Nav items and their routes:
-
-| Label | Route | Icon | Role visibility |
+| Label | Route | Icon | Visible to |
 |---|---|---|---|
 | Overview | `/dashboard/overview` | LayoutDashboard | All |
 | Users | `/dashboard/users` | Users | All |
@@ -810,436 +742,412 @@ Nav items and their routes:
 | Activity Logs | `/dashboard/activity-logs` | ScrollText | super_admin, content_manager |
 | Settings | `/dashboard/settings` | Settings | super_admin only |
 
-Behaviour:
-- Active route highlighted
-- Collapsible to icon-only at ≤ 1280px
-- Hidden with hamburger toggle at ≤ 768px
-- Bottom: user avatar, display name, role badge, logout button
+Active route highlighted. Collapsible to icons at ≤ 1280px. Hidden + hamburger at ≤ 768px. Bottom: avatar, display name, role badge, logout.
 
 ---
 
 ### FE-003 · Top header
 **File:** `components/shared/Header.tsx`
 
-- Left: hamburger (mobile) + page title (dynamic, from route)
-- Right: global date range picker + user avatar dropdown (profile link, logout)
-- Date range picker state synced to URL search params (`?from=&to=`)
-- Presets: Last 7 days, Last 30 days, Last 90 days, Last year, Custom
+- Left: hamburger (mobile) + dynamic page title
+- Right: date range picker (URL params `?from=&to=`) + user avatar dropdown
+- Presets: Last 7 / 30 / 90 days, Last year, Custom
 
 ---
 
 ### FE-004 · Login page
 **File:** `app/(auth)/login/page.tsx`
 
-- EduQuest logo + "Admin Dashboard" subtitle
-- Email + password fields
-- Submit calls `loginAction` server action
-- Inline error on invalid credentials (no page reload)
-- Loading state on submit button
-- No "forgot password" in v1 (Super Admin resets via Supabase dashboard)
+EduQuest logo + "Admin Dashboard" subtitle. Email + password. Calls `loginAction`. Inline error, no page reload. Loading state on submit. No forgot-password in v1.
 
 ---
 
 ### FE-005 · Shared UI primitives
-**Files:** `components/shared/KpiCard.tsx`, `components/shared/DateRangePicker.tsx`, `components/shared/DataTable.tsx`, `components/shared/PageHeader.tsx`, `components/shared/EmptyState.tsx`, `components/shared/ErrorBoundary.tsx`
+**Files:** `components/shared/KpiCard.tsx`, `DataTable.tsx`, `DateRangePicker.tsx`, `PageHeader.tsx`, `EmptyState.tsx`, `ErrorBoundary.tsx`
 
-**KpiCard:**
-- Props: `label`, `value`, `trend?: { direction: 'up'|'down'|'flat', percent: number }`, `icon`, `isLoading`
-- Skeleton pulse on `isLoading`
-- Trend arrow: green ↑ / red ↓ / gray —
-- ARIA: `role="region"`, `aria-label` includes label + value
-
-**DataTable:**
-- Wraps TanStack Table + TanStack Virtual
-- Props: `columns`, `data`, `isLoading`, `pagination`, `onPageChange`
-- Skeleton rows on `isLoading`
-- Empty state slot
-
-**PageHeader:**
-- Title + optional subtitle + optional action button slot
-
-**EmptyState:**
-- Icon + heading + description + optional CTA button
-
-**ErrorBoundary:**
-- Wraps sections; shows "Something went wrong" card with retry button
+- **KpiCard:** `label`, `value`, `trend?`, `icon`, `isLoading`. Skeleton on loading. Green ↑ / red ↓ / gray — trend. ARIA `role="region"`.
+- **DataTable:** TanStack Table + Virtual. `columns`, `data`, `isLoading`, `pagination`, `onPageChange`. Skeleton rows. Empty state slot.
+- **PageHeader:** title + optional subtitle + action slot.
+- **EmptyState:** icon + heading + description + optional CTA.
+- **ErrorBoundary:** "Something went wrong" card + retry button.
 
 ---
 
-### FE-006A · Realtime subscription hooks
-**File:** `lib/hooks/useRealtimeSubscription.ts`, `lib/hooks/useLeaderboard.ts`, `lib/hooks/useActivityFeed.ts`, `lib/hooks/useActiveUsers.ts`
+### FE-006A · Realtime hooks
+**Files:** `lib/hooks/useRealtimeSubscription.ts`, `useLeaderboard.ts`, `useActivityFeed.ts`, `useActiveUsers.ts`
 
-- `useRealtimeSubscription` — generic Client Component hook: takes table name, filter, callback. Manages subscribe/unsubscribe lifecycle.
-- `useLeaderboard(period)` — subscribes to `leaderboard_snapshots` for given period. Returns `{ data, isLoading }`. Re-subscribes on period change.
-- `useActivityFeed(limit)` — subscribes to `activity_logs` INSERT. Prepends new events, caps at `limit`. Returns `{ events }`.
-- `useActiveUsers()` — joins Supabase Realtime presence channel `admin-presence`. Returns `{ count }`.
-- All hooks: unsubscribe on unmount, handle connection errors gracefully (return stale data, not empty).
+- `useRealtimeSubscription(table, filter, callback)` — generic, manages lifecycle
+- `useLeaderboard(period)` — subscribes to `leaderboard_snapshots`, re-subscribes on period change
+- `useActivityFeed(limit)` — subscribes to `activity_logs` INSERT, prepends events up to limit
+- `useActiveUsers()` — presence channel `admin-presence`, returns count
+- All: unsubscribe on unmount, graceful error handling (stale data, not empty)
 
 ---
 
-## Phase 2.5 · Integration Check — Overview Page (1 page wired live)
-
-> **Goal:** Wire the Overview page to real backend data before building the rest of the frontend.
-> This is a deliberate early checkpoint — not a full integration. Catch API shape mismatches and
-> RLS policy issues now, not in Phase 6.
+## Phase 2.5 · Integration Check
 
 ### IC-001 · Wire Overview page to live backend
 
-**Prerequisite:** BE-006 (Overview queries) and BE-007 (User queries) must be merged and deployed.
-
-**Steps:**
-- Replace mock data in `FE-006 · Overview page` with real calls to `GET /api/overview/*` routes
+- Replace Overview page mock data with real backend query calls
 - Confirm all 4 KPI cards render with live data
-- Confirm RLS: teacher role sees only their students' data; viewer role sees aggregate only
-- Confirm Realtime active-user counter connects to Supabase presence channel
-- Document any API response shape differences from `lib/types/api.ts` → fix before proceeding
-- Sign off: Overview page passes in staging with a real Supabase connection
+- Confirm RLS: teacher scope limited to their students; viewer sees aggregates only
+- Confirm Realtime presence counter connects
+- Document + fix any type mismatches vs `lib/types/index.ts`
 
-**Exit criteria:** Overview page works end-to-end with live data. All type mismatches resolved.
-Any RLS gaps found here must be fixed in DB migrations before Phase 3 continues.
+**Exit criteria:** Overview works end-to-end on staging. Zero type mismatches. Zero RLS gaps. Do not proceed to Phase 3 until this passes.
 
 ---
 
-## Phase 3 · Frontend Core — Overview Dashboard
-
-### FE-006 · Overview page
-**File:** `app/(dashboard)/overview/page.tsx`
-
-Layout (desktop): 4 KPI cards across top → 2-column below (growth chart left, top subjects bar right) → 3-column below (active users counter, live leaderboard, activity feed)
-
-- Server Component: fetches KPI snapshot + growth series + top subjects
-- Each section in its own `<Suspense>` with matching skeleton
-- Date range filter (from URL params) passed to all server-fetched sections
-- Realtime sections (active users, leaderboard, feed) are Client Components
-
----
+## Phase 3 · Frontend Core
 
 ### FE-007 · User Growth Chart
 **File:** `components/charts/UserGrowthChart.tsx`
 
-- Recharts `AreaChart`, `ResponsiveContainer`
-- Toggle tabs: Daily / Weekly / Monthly (re-fetches with `granularity` param)
-- X-axis: formatted date labels (adaptive: "Jan 5" for daily, "Week of Jan 5" for weekly)
-- Y-axis: integer count, no decimals
-- Tooltip: date + count formatted
-- Gradient fill under line
-- Skeleton while loading
+Recharts `AreaChart`, `ResponsiveContainer`. Toggle: Daily / Weekly / Monthly. Adaptive X-axis date labels. Integer Y-axis. Gradient fill. Tooltip. Skeleton on load.
 
 ---
 
 ### FE-008 · Subject Engagement Bar Chart
 **File:** `components/charts/SubjectEngagementBar.tsx`
 
-- Recharts `BarChart`, horizontal orientation
-- Top 5 subjects, sorted descending by engagement score
-- Each bar coloured by subject's `color_hex`
-- Score label at end of each bar
-- Skeleton while loading
+Recharts `BarChart`, horizontal. Top 5 subjects by engagement score. Each bar coloured by subject `color_hex`. Score label at bar end. Skeleton on load.
 
 ---
 
 ### FE-009 · Realtime widgets
-**Files:** `components/realtime/ActiveUsersCounter.tsx`, `components/realtime/LiveLeaderboard.tsx`, `components/realtime/ActivityFeed.tsx`
+**Files:** `components/realtime/ActiveUsersCounter.tsx`, `LiveLeaderboard.tsx`, `ActivityFeed.tsx`
 
-**ActiveUsersCounter:**
-- Uses `useActiveUsers()` hook
-- Pulsing green dot + count + "admins online"
-- Fallback: "–" on connection error
-
-**LiveLeaderboard:**
-- Uses `useLeaderboard('weekly')` hook
-- Top 10 rows: rank, rank change badge (↑ green / ↓ red / — gray), avatar, name, points
-- Brief colour flash on rank change (CSS transition)
-- "View full leaderboard →" link
-
-**ActivityFeed:**
-- Uses `useActivityFeed(20)` hook
-- Each item: coloured action-type icon, user name, action description, relative timestamp ("2m ago")
-- Slide-in animation on new event prepend
+- **ActiveUsersCounter:** `useActiveUsers()`. Pulsing green dot + count. Fallback "–".
+- **LiveLeaderboard:** `useLeaderboard('weekly')`. Top 10: rank, rank change badge, avatar, name, points. Brief flash on update. "View full leaderboard →" link.
+- **ActivityFeed:** `useActivityFeed(20)`. Coloured action icon + user + action + relative time. Slide-in on new event.
 
 ---
 
-## Phase 3 · Frontend Core — Users Module
+### FE-006 · Overview page
+**File:** `app/(dashboard)/overview/page.tsx`
+
+Desktop layout: 4 KPI cards → 2-col (growth chart + subjects bar) → 3-col (active users + leaderboard + feed). Server Component fetches KPI + growth + subjects. Each section in `<Suspense>` with skeleton. Realtime sections are Client Components.
+
+---
 
 ### FE-010 · Users section layout
 **File:** `app/(dashboard)/users/layout.tsx`
 
-- Secondary tab nav: User List | Growth & Retention
-- Teachers see "User List" only (scoped to students assigned to their classes)
-
----
-
-### FE-011 · User list page
-**File:** `app/(dashboard)/users/page.tsx`
-
-- Filter bar: search input (debounced 300ms), role multiselect, grade select, status toggle (active/inactive)
-- Filters sync to URL params
-- Uses `DataTable` component
-- Columns: avatar + name, role badge, grade, last active (relative), total points, status pill, actions menu
-- Actions menu: "View profile", "Deactivate" (with confirmation dialog, super_admin only)
-- Server-side pagination: 25/page
-- Sort on: name, last active, total points (column header click)
-
----
-
-### FE-012 · User growth & retention page
-**File:** `app/(dashboard)/users/growth/page.tsx`
-
-Four sections:
-1. **Registration Trend** — `UserGrowthChart` (reused)
-2. **Cohort Retention Heatmap** — custom SVG grid component (see FE-013)
-3. **Role Distribution** — Recharts PieChart with legend and label percentages
-4. **Churn Risk** — table of flagged users: name, last active date, days inactive, "Send re-engagement" action placeholder
+Tab nav: User List | Growth & Retention. Teachers see User List only (scoped to assigned students).
 
 ---
 
 ### FE-013 · Cohort Retention Heatmap
 **File:** `components/charts/RetentionHeatmap.tsx`
 
-- Custom SVG grid: rows = cohort weeks (Y axis), columns = Day 1 / 7 / 14 / 30 / 60 / 90 (X axis)
-- Cell colour: 0% = `#f0f9ff` (lightest), 100% = `#0369a1` (darkest) — uses subject-safe teal scale
-- Tooltip on hover: cohort week, retention day, exact %
-- Colour scale legend bar below grid
-- ARIA: `role="img"`, `aria-label` describes the heatmap purpose; each cell has `aria-label`
+Custom SVG grid: cohort weeks (rows) × Day 1/7/14/30/60/90 (columns). Teal colour scale 0%→100%. Hover tooltip. Legend colour bar. ARIA `role="img"` + per-cell `aria-label`.
+
+---
+
+### FE-011 · User list page
+**File:** `app/(dashboard)/users/page.tsx`
+
+Filter bar: search (300ms debounce), role multiselect, grade select, status toggle — all sync to URL params. `DataTable`: avatar+name, role badge, grade, last active, total points, status pill, actions menu. Actions: View profile, Deactivate (confirm dialog, super_admin only). 25/page server pagination. Sort: name, last active, total points.
+
+---
+
+### FE-012 · User growth & retention page
+**File:** `app/(dashboard)/users/growth/page.tsx`
+
+Four sections in order: Registration Trend (FE-007 reused) → Cohort Retention Heatmap (FE-013) → Role Distribution (Recharts PieChart + legend) → Churn Risk table (name, last active, days inactive).
 
 ---
 
 ### FE-014 · User detail page
 **File:** `app/(dashboard)/users/[id]/page.tsx`
 
-- Page header: avatar, name, role badge, status pill, "Deactivate" button (super_admin only)
-- Stats row: 4 KpiCards — Lessons Completed, Quizzes Passed, Total Points, Rewards Redeemed
-- Tab panel:
-  - **Overview** — weekly points trend line chart (last 12 weeks)
-  - **Quiz History** — paginated table: quiz name, subject, score, passed badge, date
-  - **Lesson History** — paginated table: lesson title, subject, time spent, score, date
-  - **Points & Rewards** — timeline of point transactions + redemptions
-  - **Activity Log** — last 50 actions by this user
+Header: avatar, name, role badge, status, Deactivate (super_admin). Stats row: 4 KpiCards. Tabs: Overview (weekly points line chart) | Quiz History (paginated table) | Lesson History (paginated table) | Points & Rewards (transaction timeline) | Activity Log (last 50).
 
 ---
 
-## Phase 5 · Frontend Features — Content Module
+## Phase 5 · Frontend Features
 
 ### FE-015 · Content overview page
 **File:** `app/(dashboard)/content/page.tsx`
 
-- Subject filter dropdown (affects all sections)
-- **Subject cards grid** — 3/2/1 columns (desktop/tablet/mobile): icon (from `icon_url`), subject name, lesson count, quiz count, avg completion rate (progress ring), avg score badge
-- **Content status table** below grid: all lessons + quizzes with columns: title, type badge, subject, status (published/draft), completions, avg score
-- Table filterable by type, status; sortable by completions, avg score
+Subject filter dropdown. Subject cards grid (3→2→1 col): icon, name, lesson count, quiz count, completion rate ring, avg score badge. Content status table below: title, type badge, subject, published/draft, completions, avg score. Filterable by type/status, sortable by completions/avg score.
 
 ---
 
 ### FE-016 · Content performance analytics page
 **File:** `app/(dashboard)/content/performance/page.tsx`
 
-Four charts:
-1. **Subject Score Heatmap** — same pattern as RetentionHeatmap, subject × week, colour by avg score
-2. **Completion Funnel** — Recharts FunnelChart or vertical stepped bar: Started → Completed → Passed, per selected subject
-3. **Lesson Engagement Scores** — horizontal bar chart per lesson, colour-coded tier: green ≥ 70, amber 40–69, red < 40
-4. **Drop-off Points** — area chart showing % of users remaining at each lesson segment (0–100% Y axis, segment index X axis)
+Four charts: Subject Score Heatmap (same SVG pattern as FE-013) → Completion Funnel (Started/Completed/Passed) → Lesson Engagement Scores bar chart (green ≥70, amber 40–69, red <40) → Drop-off Points area chart.
 
 ---
 
 ### FE-017 · Question difficulty analysis page
 **File:** `app/(dashboard)/content/questions/page.tsx`
 
-- **Hardest Questions panel** — top 10 questions by error rate, displayed as ranked cards: rank number, question excerpt (truncated), quiz name, error rate % (bold, coloured red if > 60%)
-- **Full question table** — columns: question excerpt, quiz, subject, error rate %, avg response time (ms), skip rate %, difficulty score. Sort by error rate (default). 50/page. Subject + quiz filter dropdowns.
+Hardest Questions panel: top 10 by error rate as ranked cards (rank, excerpt, quiz name, error rate % in red if >60%). Full question table: excerpt, quiz, subject, error rate %, avg response time ms, skip rate %, difficulty score. Default sort: error rate desc. 50/page. Subject + quiz filters.
 
 ---
-
-## Phase 5 · Frontend Features — Gamification Module
 
 ### FE-018 · Gamification hub page
 **File:** `app/(dashboard)/gamification/page.tsx`
 
-- Four navigation cards linking to sub-sections: Leaderboard, Points Economy, Rewards, Engagement Funnel
-- Each card shows a top-line metric (current #1 user, total points this week, top reward, funnel conversion %)
+Four nav cards: Leaderboard, Points Economy, Rewards, Engagement Funnel. Each card shows a top-line metric (current #1, total points this week, top reward name, funnel conversion %).
 
 ---
 
 ### FE-019 · Realtime leaderboard page
 **File:** `app/(dashboard)/gamification/leaderboard/page.tsx`
 
-- Period tabs: Daily | Weekly | All Time
-- Full top-50 table: rank, rank change indicator (animated), avatar, display name, total points, points change vs previous period
-- Rank change: green ↑ badge / red ↓ badge / gray — for no change. Brief glow animation on update.
-- "Last updated" timestamp (from latest snapshot_date)
-- Switching period tab re-subscribes realtime channel
+Period tabs: Daily | Weekly | All Time. Top-50 table: rank, animated rank change (↑ green / ↓ red / — gray), avatar, name, total points, points change vs previous period. Last-updated timestamp. Switching tab re-subscribes Realtime channel.
 
 ---
 
 ### FE-020 · Points economy page
 **File:** `app/(dashboard)/gamification/economy/page.tsx`
 
-- Date range filter (from URL params)
-- **Stacked Area Chart** — points awarded (solid fill) vs points redeemed (hatched/lighter fill), Recharts AreaChart
-- **Top 10 Earners** table — rank, avatar, name, points earned in period, source breakdown mini-bar
-- **Points by Source** — Recharts PieChart: quiz / lesson / game / reward / manual
-- **Inflation Metric** — line chart: avg points per active user per day over time
+Date range filter. Stacked AreaChart: awarded (solid) vs redeemed (lighter). Top 10 Earners table with source breakdown mini-bar. Points by Source donut chart (quiz/lesson/game/reward/manual). Inflation Metric line chart (avg points per active user per day).
 
 ---
 
 ### FE-021 · Rewards analytics page
 **File:** `app/(dashboard)/gamification/rewards/page.tsx`
 
-- **Redemptions by Reward** — horizontal bar chart, sorted by redemptions desc
-- **Popularity cards** — top 3 rewards (green cards) + bottom 3 rewards (amber cards): reward name, image, redemption count, point cost
-- **Redemptions over time** — line chart per reward (top 5 only, others grouped as "Other")
+Redemptions by Reward horizontal bar chart (sorted desc). Popularity cards: top 3 (green) + bottom 3 (amber) with name, image, count, point cost. Redemptions over time line chart (top 5 rewards + "Other").
 
 ---
 
-## Phase 5 · Frontend Features — Reports & Logs
-
 ### FE-022 · Report builder page
-**File:** `app/(dashboard)/reports/page.tsx`, `components/reports/ReportBuilder.tsx`
+**File:** `app/(dashboard)/reports/page.tsx`
 
-**Report Builder component:**
-- Step 1: Report type selector (5 types in styled cards with icon + description)
-- Step 2: Date range picker
-- Step 3: Dynamic secondary filters (rendered per type — e.g. subject dropdown for learning performance, role filter for user growth)
-- "Preview" button → calls `POST /api/reports/preview` → renders preview table (columns + first 50 rows) below builder
-- "Export CSV" → `GET /api/reports/export?format=csv&...` → browser download
-- "Export PDF" → `GET /api/reports/export?format=pdf&...` → browser download
-- Loading spinners on all async actions
-- Inline error display if API fails
+Step 1: report type (5 styled cards). Step 2: date range. Step 3: dynamic secondary filters per type. "Preview" → POST preview API → render first 50 rows below. "Export CSV" / "Export PDF" → browser download. Loading spinners + inline error on all actions.
 
 ---
 
 ### FE-023 · Activity logs page
 **File:** `app/(dashboard)/activity-logs/page.tsx`
 
-- Filter bar: user search (debounced), action type multiselect (all known action_types listed), date range picker
-- Filters sync to URL params
-- Table: user avatar + name, action type badge (colour-coded), entity type, entity ID (truncated UUID), timestamp (full on hover), IP address
-- Expandable row: renders `metadata` JSONB as syntax-highlighted JSON block
-- "Export CSV" button (calls export API with `type=activity_logs` and current filters)
-- Pagination: 25/page
+Filter bar: user search (debounced), action type multiselect, date range — all sync to URL params. Table: user, action type badge (colour-coded), entity type, entity ID (truncated), timestamp (full on hover), IP. Expandable row: metadata JSONB syntax-highlighted. "Export CSV". 25/page.
 
 ---
 
-## Phase 5 · Frontend Features — Settings Module
-
-### FE-024 · Settings layout and navigation
+### FE-024 · Settings layout
 **File:** `app/(dashboard)/settings/layout.tsx`
 
-- Left sidebar sub-nav (within settings): Admin Users, Notifications, Data Retention, API Keys
-- Super Admin gate: any non-super_admin visiting `/settings/*` is redirected to `/dashboard/overview`
+Sub-nav: Admin Users | Notifications | Data Retention | API Keys. Non-super_admin → redirect to `/dashboard/overview`.
 
 ---
 
 ### FE-025 · Admin users management page
 **File:** `app/(dashboard)/settings/users/page.tsx`
 
-- **Invite form**: email input + role selector → calls `POST /api/admin/invite` → success toast
-- **Admin users table**: avatar, name, email, role badge (editable dropdown), status, "Deactivate" button
-- Role dropdown change → calls `PATCH /api/admin/roles` with optimistic UI update
-- Deactivate → confirmation dialog → calls `POST /api/users/[id]/deactivate`
-- All actions show toast notifications (success / error)
+Invite form: email + role → `POST /api/admin/invite` → success toast. Admin table: avatar, name, email, editable role dropdown, status, Deactivate button. Role change → `PATCH /api/admin/roles` optimistic. Deactivate → confirm dialog. All actions: success/error toasts.
 
 ---
 
 ### FE-026 · API keys page
 **File:** `app/(dashboard)/settings/api-keys/page.tsx`
 
-- List of key names from Vault (no values shown by default)
-- "Reveal" button per key → calls GET with `?reveal=true` → shows masked value (e.g. `sk_live_a3f9••••••••`) in a monospace input
-- "Rotate" button → confirmation dialog → calls POST to rotate → updates display
-- Warning banner: "Rotating a key immediately invalidates the old one"
-# Phase 6 · Integration
-
-### INT-001 · Wire frontend to live backend queries
-- Replace all mock data in Area 3 pages with real calls to Area 2 query functions
-- Confirm all TypeScript types align between `lib/queries/*.ts` and component props
-- Test all date range filter URL param flows end-to-end
-- Test all realtime subscriptions with live Supabase connection
+List key names (no values). "Reveal" → masked value `sk_live_a3f9••••••••`. "Rotate" → confirm dialog → POST rotate → update display. Warning banner: "Rotating a key immediately invalidates the old one."
 
 ---
+
+## Phase 6 · Integration
+
+### INT-001 · Wire all frontend pages to live backend
+Replace all mock data with real query calls. Verify TypeScript types align across `lib/queries/*.ts` and component props. Test all date range URL param flows.
 
 ### INT-002 · Realtime end-to-end validation
-- Trigger a quiz completion in seed data → confirm activity feed updates within 3 seconds
-- Trigger a leaderboard recalculation → confirm leaderboard widget animates rank changes
-- Open two browser sessions → confirm active user count increments/decrements correctly
+Quiz completion → activity feed updates <3s. Leaderboard recalculation → rank change animation fires. Two browser sessions → presence counter ±1 correctly.
 
----
-
-### INT-003 · Export pipeline end-to-end validation
-- Test CSV export for all 5 report types: confirm download, valid UTF-8 BOM, correct headers, correct data
-- Test PDF export: confirm layout, logo placeholder, date range, generated-by metadata
-- Test 500-row PDF limit: seed > 500 rows and confirm `400` response with correct error message
-- Confirm `activity_logs` entries created for every export action
-
----
+### INT-003 · Export pipeline validation
+All 5 CSV types: download, UTF-8 BOM, correct headers, correct data. PDF: layout, logo placeholder, metadata. 500-row limit: confirm `400` response. `activity_logs` entry created for every export action.
 
 ### INT-004 · RBAC end-to-end validation
-- Log in as each admin/dashboard role (super_admin, content_manager, teacher, viewer) and validate student RLS with a student session token
-- Confirm sidebar items match permissions matrix from Constitution
-- Confirm Route Handlers return 403 for out-of-role requests
-- Confirm RLS blocks direct Supabase client queries for out-of-scope data
-- Teacher: confirm they cannot see other teachers' students in any query
+All 5 roles tested. Sidebar items match permissions matrix. Route Handlers return `403` for out-of-role. RLS blocks out-of-scope data on direct Supabase queries. Teacher cannot see other teachers' students in any query.
 
 ---
 
-# Phase 7 · Hardening
+## Phase 7 · Hardening
 
 ### HARD-001 · Performance audit
-- Add `React.Suspense` + skeleton to every chart and table section (audit all pages)
-- Run `next/bundle-analyzer`; target: no chunk > 500 kB
-- Run `EXPLAIN ANALYZE` on the 5 slowest queries; document in `PERFORMANCE.md`
-- Confirm aggregation/stats refresh function is scheduled (pg_cron or Edge Function cron)
-- Measure Overview page Lighthouse LCP on production Railway URL; target < 2.5s
-- Add `next/dynamic` lazy loading for heavy chart components (Recharts bundles)
-
----
+`React.Suspense` + skeleton audit across all pages. `next/bundle-analyzer` — no chunk >500kB. `EXPLAIN ANALYZE` on 5 slowest queries → documented in `PERFORMANCE.md`. Lighthouse LCP <2.5s on production Railway URL. `next/dynamic` for heavy Recharts bundles.
 
 ### HARD-002 · Accessibility audit
-- Run `axe-core` against: Overview, Users list, User detail, Content performance, Leaderboard, Reports, Activity logs
-- Fix all critical + serious violations before sign-off
-- Keyboard navigation walkthrough: Tab through all interactive elements on Overview page
-- Verify colour contrast: all chart colours, all badge variants, all status pills meet WCAG AA (4.5:1)
-- Document audit results and sign-off in `ACCESSIBILITY.md`
-
----
+`axe-core` against all 7 main pages. Fix all critical + serious violations. Keyboard nav walkthrough on Overview. WCAG AA (4.5:1) contrast on all chart colours + badges. Sign off in `ACCESSIBILITY.md`.
 
 ### HARD-003 · Security hardening
-- Audit all Route Handlers: confirm every one validates session + role before touching data
-- Confirm `SUPABASE_SERVICE_ROLE_KEY` is never referenced in any `NEXT_PUBLIC_*` variable or client-side code
-- Confirm no raw SQL is constructed via string interpolation (must use parameterized queries or Supabase client methods)
-- Review all RLS policies with a DBA-style read: attempt to construct a query that bypasses each policy
-- Confirm Vault keys are never logged in `activity_logs` metadata
+Every Route Handler: session + role validation confirmed. `SUPABASE_SERVICE_ROLE_KEY` never in client-side code. No string-interpolated SQL. RLS bypass attempt review. Vault keys never appear in `activity_logs` metadata.
 
----
-
-### HARD-004 · Final README and developer docs
+### HARD-004 · README and developer docs
 **File:** `README.md`
 
-Sections:
-- Project overview (one paragraph)
-- Architecture diagram reference (link to this plan)
-- Local dev setup: `npm install` → `supabase start` → `supabase db reset` → `npm run dev`
-- Environment variables: table of all vars, what they do, where to get them
-- Running migrations: `supabase db push` or `supabase db reset`
-- Running seed: `psql ... < supabase/seed.sql`
-- Deployment: Railway auto-deploys `main`; set env vars in Railway dashboard
-- AI tooling: which tool covers which area
-- Seed admin credentials (never commit actual password; document pattern only)
+Sections: project overview · local dev setup (`npm install` → `supabase start` → `supabase db reset` → `npm run dev`) · environment variables table · running migrations · running seed · Railway deployment · AI tooling map · seed admin credentials pattern.
 
 ---
 
-## Summary Counts
+---
 
-| Area | Items | Phases covered |
-|---|---|---|
-| Database | 12 items (DB-001 → DB-012) | 0A, 1 |
-| Backend | 18 items (BE-001 → BE-018) | 0B, 2, 4 |
-| Frontend | 27 items (FE-001 → FE-026 + FE-006A) | 0B, 3, 5 |
-| Integration Check | 1 item (IC-001) | 2.5 |
-| Integration | 4 items (INT-001 → INT-004) | 6 |
-| Hardening | 4 items (HARD-001 → HARD-004) | 7 |
-| **Total** | **66 items** | |
+# SEQUENTIAL BUILD ORDER
+
+> One spec at a time. Complete each row fully before moving to the next.
+> Do not skip rows. Do not reorder.
 
 ---
 
-*Implementation Plan v1.0 — EduQuest — aligned with 00_CONSTITUTION.md*
-*Next step: extract Area 1, Area 2, Area 3 into individual specification documents.*
+## Phase 0A — Database Bootstrap
+
+| # | ID | Spec Title | Area | Tool |
+|:---:|---|---|:---:|---|
+| 1 | DB-001 | Supabase project init — Auth, RLS global deny, Realtime, CLI link, env keys | DB | Manual |
+
+---
+
+## Phase 0B — Dev Bootstrap
+
+| # | ID | Spec Title | Area | Tool |
+|:---:|---|---|:---:|---|
+| 2 | BE-001 | Next.js 15 scaffold — App Router, TypeScript strict, Tailwind v4, all deps, ESLint, Prettier, path alias | BE | Claude Code |
+| 3 | BE-002 | Supabase client helpers — `createServerClient`, `createBrowserClient`, `createMiddlewareClient` | BE | Claude Code |
+| 4 | BE-003 | Auth middleware — session guard, role check, redirect logic | BE | Claude Code |
+| 5 | BE-004 | TypeScript types — `database.ts` generated + all domain types in `index.ts` | BE | Claude Code |
+| 6 | BE-005 | GitHub Actions CI — lint → typecheck → build | BE | Claude Code |
+| 7 | FE-001 | App shell — root layout, auth layout, dashboard layout, fonts, metadata | FE | Antigravity |
+| 8 | FE-002 | Sidebar navigation — role-gated links, collapse behaviour, logout | FE | Antigravity |
+| 9 | FE-003 | Top header — page title, date range picker, user dropdown | FE | Antigravity |
+| 10 | FE-004 | Login page — email/password form, server action, inline error, loading state | FE | Antigravity |
+| 11 | FE-005 | Shared UI primitives — KpiCard, DataTable, PageHeader, EmptyState, ErrorBoundary, DateRangePicker | FE | Antigravity |
+| 12 | FE-006A | Realtime hooks — `useLeaderboard`, `useActivityFeed`, `useActiveUsers`, `useRealtimeSubscription` | FE | Antigravity |
+
+---
+
+## Phase 1 — Database Schema
+
+| # | ID | Spec Title | Area | Tool |
+|:---:|---|---|:---:|---|
+| 13 | DB-002 | Migration 001 — `user_profiles`, `role` ENUM, `updated_at` trigger | DB | Claude Code |
+| 14 | DB-003 | Migration 002 — `subjects`, `classrooms`, `teacher_class_assignments`, `student_class_enrollments` | DB | Claude Code |
+| 15 | DB-004 | Migration 003 — `lessons`, `quizzes`, `questions`, `games` | DB | Claude Code |
+| 16 | DB-005 | Migration 004 — `lesson_completions`, `quiz_attempts`, `question_responses`, `game_sessions` | DB | Claude Code |
+| 17 | DB-006 | Migration 005 — `point_transactions`, `rewards`, `reward_redemptions`, `leaderboard_snapshots` | DB | Claude Code |
+| 18 | DB-007 | Migration 006 — `activity_logs` (append-only, no soft delete) | DB | Claude Code |
+| 19 | DB-008 | Migration 007 — `daily_user_stats`, `daily_content_stats`, `daily_gamification_stats` | DB | Claude Code |
+| 20 | DB-009 | Migration 008 — Postgres functions: `get_user_role`, `teacher_can_access_student`, `compute_leaderboard_snapshot`, `refresh_daily_stats`, `get_cohort_retention`, `flag_churn_risk` | DB | Claude Code |
+| 21 | DB-010 | Migration 009 — RLS policies for all 20 tables × 5 roles | DB | Claude Code |
+| 22 | DB-011 | Migration 010 — 25 performance indexes | DB | Claude Code |
+| 23 | DB-012 | Seed data — 5 subjects, 10 classrooms, 5 teachers, 100 students, 30 days synthetic activity | DB | Claude Code |
+
+---
+
+## Phase 2 — Backend Core
+
+| # | ID | Spec Title | Area | Tool |
+|:---:|---|---|:---:|---|
+| 24 | BE-006 | Overview queries — `getKpiSnapshot`, `getUserGrowthSeries`, `getTopSubjects` | BE | Claude Code |
+| 25 | BE-007 | User queries — `getUsers` paginated, `getUserById`, activity/quiz/lesson/points history | BE | Claude Code |
+| 26 | BE-008 | User growth & retention queries — trend, cohort matrix, role distribution, churn risk | BE | Claude Code |
+| 27 | BE-009 | Content queries — subject overview, score matrix, funnel, hardest questions, engagement, dropoff | BE | Claude Code |
+| 28 | BE-010 | Gamification queries — leaderboard, points timeline, top earners, by source, rewards, funnel | BE | Claude Code |
+| 29 | BE-011 | Activity log queries — `getActivityLogs` paginated/filtered, `logAction()` utility | BE | Claude Code |
+| 30 | BE-012 | Auth server actions — `loginAction`, `logoutAction` | BE | Claude Code |
+| 31 | BE-018 | Realtime server config — confirm channels, RLS payloads, presence channel docs | BE | Claude Code |
+
+---
+
+## Phase 2.5 — Integration Check ✋
+
+| # | ID | Spec Title | Area | Tool |
+|:---:|---|---|:---:|---|
+| 32 | IC-001 | Wire Overview page to live backend — validate KPIs, RLS per role, Realtime presence, fix all type mismatches | ALL | Manual |
+
+> **Do not proceed to Phase 3 until IC-001 passes completely.**
+
+---
+
+## Phase 3 — Frontend Core
+
+| # | ID | Spec Title | Area | Tool |
+|:---:|---|---|:---:|---|
+| 33 | FE-007 | User Growth Chart — Recharts AreaChart, daily/weekly/monthly toggle, gradient fill, skeleton | FE | Antigravity |
+| 34 | FE-008 | Subject Engagement Bar Chart — horizontal, subject colour per bar, score label, skeleton | FE | Antigravity |
+| 35 | FE-009 | Realtime widgets — `ActiveUsersCounter`, `LiveLeaderboard` top 10, `ActivityFeed` slide-in | FE | Antigravity |
+| 36 | FE-006 | Overview page — 4 KPIs, growth chart, subjects bar, 3 realtime widgets, Suspense skeletons | FE | Antigravity |
+| 37 | FE-010 | Users section layout — tab nav (User List / Growth & Retention), teacher scope | FE | Antigravity |
+| 38 | FE-013 | Cohort Retention Heatmap — custom SVG grid, teal colour scale, tooltip, ARIA labels | FE | Antigravity |
+| 39 | FE-011 | User list page — filter bar, DataTable, sort, 25/page pagination, deactivate action | FE | Antigravity |
+| 40 | FE-012 | User growth & retention page — registration trend, heatmap, role distribution, churn risk | FE | Antigravity |
+| 41 | FE-014 | User detail page — 5 tabs, 4 KpiCards stat row, deactivate button | FE | Antigravity |
+
+---
+
+## Phase 4 — Backend Features
+
+| # | ID | Spec Title | Area | Tool |
+|:---:|---|---|:---:|---|
+| 42 | BE-013 | Report preview API — POST, 5 report types, returns first 50 rows | BE | Claude Code |
+| 43 | BE-014 | CSV export Route Handler — streaming, UTF-8 BOM, all 5 report types, no row limit | BE | Claude Code |
+| 44 | BE-015 | PDF export Route Handler — `@react-pdf/renderer`, 500-row limit, logo + metadata | BE | Claude Code |
+| 45 | BE-016 | Admin user management routes — invite, role change, deactivate | BE | Claude Code |
+| 46 | BE-017 | Vault / API key route — list key names, reveal masked, rotate | BE | Claude Code |
+
+---
+
+## Phase 5 — Frontend Features
+
+| # | ID | Spec Title | Area | Tool |
+|:---:|---|---|:---:|---|
+| 47 | FE-015 | Content overview page — subject cards grid, content status table | FE | Antigravity |
+| 48 | FE-016 | Content performance analytics — score heatmap, completion funnel, engagement bars, drop-off chart | FE | Antigravity |
+| 49 | FE-017 | Question difficulty analysis — hardest questions panel, full difficulty table | FE | Antigravity |
+| 50 | FE-018 | Gamification hub — 4 nav cards with top-line metrics | FE | Antigravity |
+| 51 | FE-019 | Realtime leaderboard page — period tabs, top 50, animated rank change | FE | Antigravity |
+| 52 | FE-020 | Points economy page — stacked area, top earners, by source donut, inflation line | FE | Antigravity |
+| 53 | FE-021 | Rewards analytics page — redemptions bar, popularity cards, timeline | FE | Antigravity |
+| 54 | FE-022 | Report builder page — 3-step builder, preview table, CSV + PDF download | FE | Antigravity |
+| 55 | FE-023 | Activity logs page — filter bar, expandable rows, metadata JSON, export CSV | FE | Antigravity |
+| 56 | FE-024 | Settings layout — sub-nav, super_admin gate redirect | FE | Antigravity |
+| 57 | FE-025 | Admin users management — invite form, role dropdown optimistic, deactivate confirm | FE | Antigravity |
+| 58 | FE-026 | API keys page — vault list, reveal masked, rotate with warning banner | FE | Antigravity |
+
+---
+
+## Phase 6 — Integration
+
+| # | ID | Spec Title | Area | Tool |
+|:---:|---|---|:---:|---|
+| 59 | INT-001 | Wire all frontend pages to live backend — swap all mocks with real query calls, align all types | ALL | Manual |
+| 60 | INT-002 | Realtime end-to-end — activity feed <3s, leaderboard animation, presence counter ±1 | ALL | Manual |
+| 61 | INT-003 | Export pipeline — all 5 CSV types, PDF, 500-row limit, activity log entries confirmed | ALL | Manual |
+| 62 | INT-004 | RBAC end-to-end — all 5 roles, sidebar gates, Route Handler 403s, RLS bypass attempts | ALL | Manual |
+
+---
+
+## Phase 7 — Hardening
+
+| # | ID | Spec Title | Area | Tool |
+|:---:|---|---|:---:|---|
+| 63 | HARD-001 | Performance audit — Suspense/skeletons, bundle <500kB, EXPLAIN ANALYZE top 5, LCP <2.5s | ALL | Claude Code |
+| 64 | HARD-002 | Accessibility audit — axe-core all pages, keyboard nav, WCAG AA contrast | ALL | Antigravity |
+| 65 | HARD-003 | Security hardening — Route Handler audit, no service key in client, RLS bypass review | ALL | Claude Code |
+| 66 | HARD-004 | README + developer docs — setup, migrations, seed, deploy, AI tooling map | ALL | Claude Code |
+
+---
+
+## Summary
+
+| Phase | Specs | Area |
+|---|:---:|---|
+| 0A — DB Bootstrap | 1 | DB |
+| 0B — Dev Bootstrap | 11 | BE + FE |
+| 1 — Database Schema | 11 | DB |
+| 2 — Backend Core | 8 | BE |
+| 2.5 — Integration Check | 1 | ALL |
+| 3 — Frontend Core | 9 | FE |
+| 4 — Backend Features | 5 | BE |
+| 5 — Frontend Features | 12 | FE |
+| 6 — Integration | 4 | ALL |
+| 7 — Hardening | 4 | ALL |
+| **Total** | **66** | |
+
+---
+
+*Implementation Plan v2.0 — EduQuest — aligned with 00_CONSTITUTION.md*
