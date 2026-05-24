@@ -20,7 +20,11 @@ export async function GET() {
       latency: `${latency}ms`,
       data: {
         connection: connectionResult,
-        session: sessionResult,
+        session: {
+          authenticated: Boolean(sessionResult?.user),
+          userId: sessionResult?.user?.id || null,
+          message: sessionResult?.user ? 'User is authenticated' : 'No active session'
+        },
         performance: {
           latencyMs: latency,
           targetMet: latency < 200,

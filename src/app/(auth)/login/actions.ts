@@ -43,8 +43,14 @@ export async function signIn(formData: FormData) {
 export async function signOut() {
   const supabase = await createServerClient()
 
-  await supabase.auth.signOut()
-
-  // Clear any session cookies and redirect to login
-  redirect('/auth/login')
+  try {
+    await supabase.auth.signOut()
+    // Clear any session cookies and redirect to login
+    redirect('/auth/login')
+  } catch (error) {
+    console.error('Sign out error:', error)
+    // Still redirect to login even if sign out fails
+    // The user will be logged out on the next request
+    redirect('/auth/login')
+  }
 }

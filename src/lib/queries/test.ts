@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { DatabaseError } from '@/lib/errors'
-import { startDbTimer } from '@/lib/performance'
+import { startDbTimer, startAuthTimer } from '@/lib/performance'
 
 export async function testConnection() {
   try {
@@ -18,7 +18,11 @@ export async function testConnection() {
 
     if (error) {
       // Log the raw error for debugging but don't expose to UI
-      console.error('Database query error:', error)
+      console.error('Database query error in testConnection:', {
+        message: error.message,
+        code: error.code,
+        query: 'profiles.select.id,email.created_at.limit1.maybeSingle'
+      })
       throw new DatabaseError('Database query failed')
     }
 
@@ -37,7 +41,11 @@ export async function testConnection() {
       message: 'Database connection successful',
     }
   } catch (error) {
-    console.error('Test connection error:', error)
+    console.error('Test connection error:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      function: 'testConnection',
+      timestamp: new Date().toISOString()
+    })
     throw error
   }
 }
@@ -53,7 +61,10 @@ export async function getUserSession() {
 
     if (error) {
       // Log the raw error for debugging but don't expose to UI
-      console.error('Auth check error:', error)
+      console.error('Auth check error in getUserSession:', {
+        message: error.message,
+        code: error.code
+      })
       throw new DatabaseError('Auth check failed')
     }
 
@@ -63,7 +74,11 @@ export async function getUserSession() {
       message: 'User session retrieved successfully',
     }
   } catch (error) {
-    console.error('Get user session error:', error)
+    console.error('Get user session error:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      function: 'getUserSession',
+      timestamp: new Date().toISOString()
+    })
     throw error
   }
 }

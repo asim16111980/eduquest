@@ -24,7 +24,7 @@ class PerformanceMonitor {
         operation,
         duration,
         timestamp: new Date(),
-        success: duration <= this.thresholds[operation as keyof typeof this.thresholds] || true,
+        success: duration <= (this.thresholds[operation as keyof typeof this.thresholds] ?? Infinity),
         metadata: {
           threshold: this.thresholds[operation as keyof typeof this.thresholds],
         }
@@ -41,8 +41,9 @@ class PerformanceMonitor {
     }
 
     // Log slow operations
-    if (metric.duration > this.thresholds[metric.operation as keyof typeof this.thresholds]) {
-      console.warn(`Slow ${metric.operation}: ${metric.duration}ms (threshold: ${this.thresholds[metric.operation as keyof typeof this.thresholds]}ms)`)
+    const threshold = this.thresholds[metric.operation as keyof typeof this.thresholds] ?? Infinity
+    if (metric.duration > threshold) {
+      console.warn(`Slow ${metric.operation}: ${metric.duration}ms (threshold: ${threshold}ms)`)
     }
   }
 

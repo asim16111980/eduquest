@@ -46,9 +46,24 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser()
   endAuthTimer()
 
-  // Refresh session if expired - required for PKCE flow
+  // Refresh session if expired or near expiry - required for PKCE flow
   if (user) {
-    await supabase.auth.refreshSession()
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+
+      // Only refresh if session is expired or within 5 minutes of expiry
+      if (session?.expires_at) {
+        const now = Math.floor(Date.now() / 1000)
+        const timeUntilExpiry = session.expires_at - now
+
+        if (timeUntilExpiry < 300) { // 5 minutes
+          await supabase.auth.refreshSession()
+        }
+      }
+    } catch (error) {
+      console.error('Failed to refresh session:', error)
+      // Continue with the request even if refresh fails
+    }
   }
 
   if (!user) {
