@@ -54,7 +54,7 @@ export async function TestServerComponent() {
               </span>
             </div>
             <p className="mb-2">{connectionResult.message}</p>
-            {(connectionResult.data as any) && (
+            {connectionResult.data != null && (
               <pre className="text-sm bg-gray-100 p-2 rounded mt-2 overflow-auto">
                 {JSON.stringify(connectionResult.data, null, 2)}
               </pre>
