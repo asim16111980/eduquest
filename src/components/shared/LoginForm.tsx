@@ -22,9 +22,31 @@ export default function LoginForm({ onSuccess, onError, className = '' }: LoginF
       await signIn(formData)
       onSuccess?.()
     } catch (err) {
-      const errorMessage = getUserFriendlyMessage(err)
-      setError(errorMessage)
-      onError?.(errorMessage)
+      // Check if this is an authentication error with specific message
+      if (err && typeof err === 'object' && 'message' in err) {
+        const error = err as { message: string }
+        // Check if this is an auth error (contains auth-specific keywords)
+        if (error.message.includes('Invalid login credentials') ||
+            error.message.includes('Email not confirmed') ||
+            error.message.includes('Account locked') ||
+            error.message.includes('Account disabled') ||
+            error.message.includes('Invalid token') ||
+            error.message.includes('rate limit')) {
+          // Use original auth error message
+          setError(error.message)
+          onError?.(error.message)
+        } else {
+          // Use user-friendly message for non-auth errors
+          const errorMessage = getUserFriendlyMessage(err)
+          setError(errorMessage)
+          onError?.(errorMessage)
+        }
+      } else {
+        // Fallback to user-friendly message
+        const errorMessage = getUserFriendlyMessage(err)
+        setError(errorMessage)
+        onError?.(errorMessage)
+      }
     } finally {
       setIsSubmitting(false)
     }

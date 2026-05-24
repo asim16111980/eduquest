@@ -47,6 +47,17 @@ export default function LoginPage() {
           </p>
         </div>
 
+        {/* Error display with aria-live for screen readers */}
+        {error && (
+          <div
+            role="alert"
+            aria-live="assertive"
+            className="bg-red-50 border border-red-200 rounded-md p-4"
+          >
+            <p className="text-sm text-red-600">{error}</p>
+          </div>
+        )}
+
         <LoginForm
           onSuccess={handleSuccess}
           onError={handleError}

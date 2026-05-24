@@ -6,22 +6,20 @@ Write-Host "=== Testing Authentication Flow ===" -ForegroundColor Green
 # Test 1: Check if login page loads without authentication
 Write-Host "`n1. Testing access to dashboard without authentication..." -ForegroundColor Yellow
 try {
-    $response = Invoke-WebRequest -Uri "http://localhost:3000/dashboard" -UseBasicParsing -ErrorAction Stop
-    if ($response.StatusCode -eq 302) {
+    $response = Invoke-WebRequest -Uri "http://localhost:3000/dashboard" -UseBasicParsing -ErrorAction Stop -MaximumRedirection 0
+    Write-Host "✗ Expected redirect but got response: $($response.StatusCode)" -ForegroundColor Red
+} catch {
+    if ($_.Exception.Response.StatusCode -eq 302) {
         Write-Host "✓ Dashboard correctly redirects to login page" -ForegroundColor Green
     } else {
-        Write-Host "✗ Unexpected response from dashboard" -ForegroundColor Red
+        Write-Host "✗ Unexpected error: $($_.Exception.Message)" -ForegroundColor Red
     }
-} catch {
-    Write-Host "✗ Failed to connect to localhost:3000. Make sure the dev server is running." -ForegroundColor Red
-    Write-Host "  Run 'npm run dev' in another terminal before running this test." -ForegroundColor Yellow
-    exit 1
 }
 
 # Test 2: Check if login page is accessible
 Write-Host "`n2. Testing access to login page..." -ForegroundColor Yellow
 try {
-    $response = Invoke-WebRequest -Uri "http://localhost:3000/auth/login" -UseBasicParsing
+    $response = Invoke-WebRequest -Uri "http://localhost:3000/login" -UseBasicParsing
     if ($response.StatusCode -eq 200) {
         Write-Host "✓ Login page is accessible" -ForegroundColor Green
         # Check for form elements
