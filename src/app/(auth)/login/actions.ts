@@ -1,8 +1,9 @@
 'use server'
 
-import { createServerClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { AuthenticationError } from '@/lib/errors'
+import { getAuthErrorMessage } from '@/lib/auth/errors'
 
 export async function signIn(formData: FormData) {
   const email = formData.get('email') as string
@@ -19,7 +20,7 @@ export async function signIn(formData: FormData) {
   }
 
   try {
-    const supabase = await createServerClient()
+    const supabase = await createClient()
 
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -27,7 +28,7 @@ export async function signIn(formData: FormData) {
     })
 
     if (error) {
-      throw new AuthenticationError(error.message)
+      throw new AuthenticationError(getAuthErrorMessage(error))
     }
 
     if (data.user) {
@@ -41,7 +42,7 @@ export async function signIn(formData: FormData) {
 }
 
 export async function signOut() {
-  const supabase = await createServerClient()
+  const supabase = await createClient()
 
   try {
     await supabase.auth.signOut()
