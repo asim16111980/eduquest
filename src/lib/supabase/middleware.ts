@@ -2,8 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse, type NextRequest } from 'next/server'
 import { startAuthTimer } from '@/lib/performance'
-import { hasRole } from '@/lib/types/roles'
-import { UserRole } from '@/lib/types/user'
+import { hasRole, UserRole } from '@/lib/types/database'
 
 interface CookieEntry {
   name: string
@@ -102,7 +101,18 @@ export async function middleware(request: NextRequest) {
       // Return 401 for protected API routes
       const response = NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
       // Copy cookies from supabaseResponse to preserve any updates
-      response.cookies.setAll(supabaseResponse.cookies.getAll())
+      const cookiesToCopy = supabaseResponse.cookies.getAll()
+      cookiesToCopy.forEach(cookie => {
+        response.cookies.set(cookie.name, cookie.value, {
+          path: cookie.path || '/',
+          domain: cookie.domain,
+          secure: cookie.secure,
+          httpOnly: cookie.httpOnly,
+          sameSite: cookie.sameSite as 'strict' | 'lax' | 'none',
+          maxAge: cookie.maxAge,
+          expires: cookie.expires ? new Date(cookie.expires) : undefined,
+        })
+      })
       return response
     } else if (!request.nextUrl.pathname.startsWith('/auth') && !request.nextUrl.pathname.startsWith('/api/auth')) {
       // Redirect to login for protected pages
@@ -110,7 +120,18 @@ export async function middleware(request: NextRequest) {
       url.pathname = '/auth/login'
       const response = NextResponse.redirect(url)
       // Copy cookies from supabaseResponse to preserve any updates
-      response.cookies.setAll(supabaseResponse.cookies.getAll())
+      const cookiesToCopy = supabaseResponse.cookies.getAll()
+      cookiesToCopy.forEach(cookie => {
+        response.cookies.set(cookie.name, cookie.value, {
+          path: cookie.path || '/',
+          domain: cookie.domain,
+          secure: cookie.secure,
+          httpOnly: cookie.httpOnly,
+          sameSite: cookie.sameSite as 'strict' | 'lax' | 'none',
+          maxAge: cookie.maxAge,
+          expires: cookie.expires ? new Date(cookie.expires) : undefined,
+        })
+      })
       return response
     }
   }
@@ -122,7 +143,18 @@ export async function middleware(request: NextRequest) {
       if (isApiRoute) {
         const response = NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
         // Copy cookies from supabaseResponse to preserve any updates
-        response.cookies.setAll(supabaseResponse.cookies.getAll())
+        const cookiesToCopy = supabaseResponse.cookies.getAll()
+        cookiesToCopy.forEach(cookie => {
+          response.cookies.set(cookie.name, cookie.value, {
+            path: cookie.path || '/',
+            domain: cookie.domain,
+            secure: cookie.secure,
+            httpOnly: cookie.httpOnly,
+            sameSite: cookie.sameSite as 'strict' | 'lax' | 'none',
+            maxAge: cookie.maxAge,
+            expires: cookie.expires ? new Date(cookie.expires) : undefined,
+          })
+        })
         return response
       } else {
         // Redirect to dashboard for insufficient permissions
@@ -130,7 +162,18 @@ export async function middleware(request: NextRequest) {
         url.pathname = '/dashboard'
         const response = NextResponse.redirect(url)
         // Copy cookies from supabaseResponse to preserve any updates
-        response.cookies.setAll(supabaseResponse.cookies.getAll())
+        const cookiesToCopy = supabaseResponse.cookies.getAll()
+        cookiesToCopy.forEach(cookie => {
+          response.cookies.set(cookie.name, cookie.value, {
+            path: cookie.path || '/',
+            domain: cookie.domain,
+            secure: cookie.secure,
+            httpOnly: cookie.httpOnly,
+            sameSite: cookie.sameSite as 'strict' | 'lax' | 'none',
+            maxAge: cookie.maxAge,
+            expires: cookie.expires ? new Date(cookie.expires) : undefined,
+          })
+        })
         return response
       }
     }
@@ -140,7 +183,18 @@ export async function middleware(request: NextRequest) {
       if (isApiRoute) {
         const response = NextResponse.json({ error: 'Account is disabled' }, { status: 403 })
         // Copy cookies from supabaseResponse to preserve any updates
-        response.cookies.setAll(supabaseResponse.cookies.getAll())
+        const cookiesToCopy = supabaseResponse.cookies.getAll()
+        cookiesToCopy.forEach(cookie => {
+          response.cookies.set(cookie.name, cookie.value, {
+            path: cookie.path || '/',
+            domain: cookie.domain,
+            secure: cookie.secure,
+            httpOnly: cookie.httpOnly,
+            sameSite: cookie.sameSite as 'strict' | 'lax' | 'none',
+            maxAge: cookie.maxAge,
+            expires: cookie.expires ? new Date(cookie.expires) : undefined,
+          })
+        })
         return response
       } else {
         // Log out inactive users and redirect to login
@@ -150,7 +204,18 @@ export async function middleware(request: NextRequest) {
         url.searchParams.set('error', 'account_disabled')
         const response = NextResponse.redirect(url)
         // Copy cookies from supabaseResponse to preserve any updates
-        response.cookies.setAll(supabaseResponse.cookies.getAll())
+        const cookiesToCopy = supabaseResponse.cookies.getAll()
+        cookiesToCopy.forEach(cookie => {
+          response.cookies.set(cookie.name, cookie.value, {
+            path: cookie.path || '/',
+            domain: cookie.domain,
+            secure: cookie.secure,
+            httpOnly: cookie.httpOnly,
+            sameSite: cookie.sameSite as 'strict' | 'lax' | 'none',
+            maxAge: cookie.maxAge,
+            expires: cookie.expires ? new Date(cookie.expires) : undefined,
+          })
+        })
         return response
       }
     }
