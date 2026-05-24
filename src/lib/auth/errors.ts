@@ -46,7 +46,9 @@ export function getAuthErrorMessage(error: unknown): string {
 }
 
 export function isAuthError(error: unknown): error is { message: string } {
-  return error && typeof error === 'object' && 'message' in error && typeof (error as any).message === 'string'
+  if (typeof error !== 'object' || error === null) return false
+  if (!('message' in error)) return false
+  return typeof (error as { message: unknown }).message === 'string'
 }
 
 export function shouldRetryAuth(error: unknown): boolean {
