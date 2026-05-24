@@ -85,17 +85,17 @@ description: "Task list for Development Bootstrap for EduQuest Admin Dashboard"
 
 ### Implementation for User Story 2
 
-- [ ] T026 [P] [US2] Create server client in src/lib/supabase/server.ts
-- [ ] T027 [P] [US2] Create browser client in src/lib/supabase/client.ts
-- [ ] T028 [P] [US2] Create middleware client in src/lib/supabase/middleware.ts
-- [ ] T029 [US2] Implement authentication middleware with PKCE flow for login/logout actions
-- [ ] T030 [US2] Create test API route in src/app/api/test/route.ts to verify Supabase connection
-- [ ] T031 [US2] Create test query function in src/lib/queries/test.ts
-- [ ] T032 [US2] Create API route to execute test query and return results
-- [ ] T033 [US2] Verify server client can connect to Supabase and execute queries
-- [ ] T034 [US2] Verify middleware validates sessions and attaches user role to headers
-- [ ] T035 [US2] Test graceful degradation when Supabase is unavailable
-- [ ] T036 [P] [US2] Add performance monitoring to track authentication latency <200ms
+- [x] T026 [P] [US2] Create server client in src/lib/supabase/server.ts
+- [x] T027 [P] [US2] Create browser client in src/lib/supabase/client.ts
+- [x] T028 [P] [US2] Create middleware client in src/lib/supabase/middleware.ts
+- [x] T029 [US2] Implement authentication middleware with PKCE flow for login/logout actions
+- [x] T030 [US2] Create test API route in src/app/api/test/route.ts to verify Supabase connection
+- [x] T031 [US2] Create test query function in src/lib/queries/test.ts
+- [x] T032 [US2] Create API route to execute test query and return results
+- [x] T033 [US2] Verify server client can connect to Supabase and execute queries
+- [x] T034 [US2] Verify middleware validates sessions and attaches user role to headers
+- [x] T035 [US2] Test graceful degradation when Supabase is unavailable
+- [x] T036 [P] [US2] Add performance monitoring to track authentication latency <200ms
 
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work independently
 
