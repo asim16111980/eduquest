@@ -9,7 +9,12 @@ export const ROLE_HIERARCHY: UserRole[] = [
 ]
 
 export function hasRole(userRole: UserRole, requiredRole: UserRole): boolean {
-  const userIndex = ROLE_HIERARCHY.indexOf(userRole)
+  // Validate/canonicalize the incoming userRole against the UserRole enum
+  const normalizedRole = Object.values(UserRole).includes(userRole)
+    ? userRole
+    : UserRole.VIEWER // Fallback to the least-privileged role if not found
+
+  const userIndex = ROLE_HIERARCHY.indexOf(normalizedRole)
   const requiredIndex = ROLE_HIERARCHY.indexOf(requiredRole)
   return userIndex <= requiredIndex
 }

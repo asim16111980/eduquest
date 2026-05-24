@@ -3,14 +3,9 @@
 
 Write-Host "=== Testing Logout Functionality ===" -ForegroundColor Green
 
-# Test: Check if logout action exists and is accessible
-Write-Host "`n1. Testing logout action accessibility..." -ForegroundColor Yellow
-try {
-    $response = Invoke-WebRequest -Uri "http://localhost:3000/dashboard/actions" -Method POST -UseBasicParsing -ErrorAction SilentlyContinue
-    Write-Host "✓ Logout action endpoint exists" -ForegroundColor Green
-} catch {
-    Write-Host "✗ Logout action endpoint not accessible (expected for unauthenticated users)" -ForegroundColor Yellow
-}
+# Note: Logout functionality requires browser testing as it uses Server Actions
+Write-Host "`n1. Logout testing requires browser automation..." -ForegroundColor Yellow
+Write-Host "   (Manual testing instructions below)" -ForegroundColor Yellow
 
 Write-Host "`n2. Manual Testing Instructions:" -ForegroundColor Yellow
 Write-Host "   a) Log in with valid credentials" -ForegroundColor Yellow

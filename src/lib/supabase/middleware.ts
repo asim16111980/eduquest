@@ -51,8 +51,8 @@ export async function middleware(request: NextRequest) {
 
   // Get user profile to determine role
   let userRole: UserRole = UserRole.VIEWER // Default role
-  if (user && user.user_metadata?.role) {
-    userRole = user.user_metadata.role
+  if (user && user.app_metadata?.role) {
+    userRole = user.app_metadata.role
   }
 
   // Refresh session if expired or near expiry - required for PKCE flow
@@ -100,12 +100,18 @@ export async function middleware(request: NextRequest) {
   if (!user) {
     if (isApiRoute && !request.nextUrl.pathname.startsWith('/api/auth')) {
       // Return 401 for protected API routes
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      const response = NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      // Copy cookies from supabaseResponse to preserve any updates
+      response.cookies.setAll(supabaseResponse.cookies.getAll())
+      return response
     } else if (!request.nextUrl.pathname.startsWith('/auth') && !request.nextUrl.pathname.startsWith('/api/auth')) {
       // Redirect to login for protected pages
       const url = request.nextUrl.clone()
       url.pathname = '/auth/login'
-      return NextResponse.redirect(url)
+      const response = NextResponse.redirect(url)
+      // Copy cookies from supabaseResponse to preserve any updates
+      response.cookies.setAll(supabaseResponse.cookies.getAll())
+      return response
     }
   }
 
@@ -114,26 +120,38 @@ export async function middleware(request: NextRequest) {
     // Check admin routes
     if (requiresAdmin && !hasRole(userRole, UserRole.CONTENT_MANAGER)) {
       if (isApiRoute) {
-        return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
+        const response = NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
+        // Copy cookies from supabaseResponse to preserve any updates
+        response.cookies.setAll(supabaseResponse.cookies.getAll())
+        return response
       } else {
         // Redirect to dashboard for insufficient permissions
         const url = request.nextUrl.clone()
         url.pathname = '/dashboard'
-        return NextResponse.redirect(url)
+        const response = NextResponse.redirect(url)
+        // Copy cookies from supabaseResponse to preserve any updates
+        response.cookies.setAll(supabaseResponse.cookies.getAll())
+        return response
       }
     }
 
     // Check if user is active
-    if (!user.user_metadata?.is_active) {
+    if (!user.app_metadata?.is_active) {
       if (isApiRoute) {
-        return NextResponse.json({ error: 'Account is disabled' }, { status: 403 })
+        const response = NextResponse.json({ error: 'Account is disabled' }, { status: 403 })
+        // Copy cookies from supabaseResponse to preserve any updates
+        response.cookies.setAll(supabaseResponse.cookies.getAll())
+        return response
       } else {
         // Log out inactive users and redirect to login
         const url = request.nextUrl.clone()
         url.pathname = '/auth/login'
         // Add error message as query parameter
         url.searchParams.set('error', 'account_disabled')
-        return NextResponse.redirect(url)
+        const response = NextResponse.redirect(url)
+        // Copy cookies from supabaseResponse to preserve any updates
+        response.cookies.setAll(supabaseResponse.cookies.getAll())
+        return response
       }
     }
   }

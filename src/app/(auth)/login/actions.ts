@@ -19,25 +19,20 @@ export async function signIn(formData: FormData) {
     throw new AuthenticationError('Please enter a valid email address')
   }
 
-  try {
-    const supabase = await createClient()
+  const supabase = await createClient()
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  })
 
-    if (error) {
-      throw new AuthenticationError(getAuthErrorMessage(error))
-    }
+  if (error) {
+    throw new AuthenticationError(getAuthErrorMessage(error))
+  }
 
-    if (data.user) {
-      // Redirect to dashboard after successful login
-      redirect('/dashboard')
-    }
-  } catch (error) {
-    // Re-throw the error to be handled by the form
-    throw error
+  if (data.user) {
+    // Redirect to dashboard after successful login
+    redirect('/dashboard')
   }
 }
 
@@ -46,12 +41,12 @@ export async function signOut() {
 
   try {
     await supabase.auth.signOut()
-    // Clear any session cookies and redirect to login
-    redirect('/auth/login')
   } catch (error) {
     console.error('Sign out error:', error)
-    // Still redirect to login even if sign out fails
+    // Continue with redirect even if sign out fails
     // The user will be logged out on the next request
-    redirect('/auth/login')
   }
+
+  // Clear any session cookies and redirect to login
+  redirect('/auth/login')
 }
