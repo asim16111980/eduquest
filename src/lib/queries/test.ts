@@ -1,9 +1,11 @@
 import { createClient } from '@/lib/supabase/server'
 import { DatabaseError } from '@/lib/errors'
+import { startDbTimer } from '@/lib/performance'
 
 export async function testConnection() {
   try {
     const supabase = await createClient()
+    const endDbTimer = startDbTimer('test_connection')
 
     // Test basic query
     const { data, error } = await supabase
@@ -11,6 +13,8 @@ export async function testConnection() {
       .select('id, email, created_at')
       .limit(1)
       .maybeSingle()
+
+    endDbTimer()
 
     if (error) {
       // Log the raw error for debugging but don't expose to UI
@@ -41,8 +45,11 @@ export async function testConnection() {
 export async function getUserSession() {
   try {
     const supabase = await createClient()
+    const endAuthTimer = startAuthTimer()
 
     const { data: { user }, error } = await supabase.auth.getUser()
+
+    endAuthTimer()
 
     if (error) {
       // Log the raw error for debugging but don't expose to UI

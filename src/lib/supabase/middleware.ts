@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { startAuthTimer } from '@/lib/performance'
 
 interface CookieEntry {
   name: string
@@ -39,9 +40,16 @@ export async function middleware(request: NextRequest) {
   // supabase.auth.getUser(). A simple mistake could make it very hard to debug
   // issues with users being randomly logged out.
 
+  const endAuthTimer = startAuthTimer()
   const {
     data: { user },
   } = await supabase.auth.getUser()
+  endAuthTimer()
+
+  // Refresh session if expired - required for PKCE flow
+  if (user) {
+    await supabase.auth.refreshSession()
+  }
 
   if (!user) {
     if (request.nextUrl.pathname.startsWith('/api') && !request.nextUrl.pathname.startsWith('/api/auth')) {
