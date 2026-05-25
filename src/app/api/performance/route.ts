@@ -10,13 +10,13 @@ const logger = {
 export async function GET() {
   try {
     const authMetrics = performanceMonitor.getMetrics('authentication')
-    const dbMetrics = performanceMonitor.getMetrics('database_test_connection')
+    const dbMetrics = performanceMonitor.getMetrics('databaseQuery')
 
     // Compute once per request to avoid drift
     const authAvg = performanceMonitor.getAverageDuration('authentication')
     const authSuccess = performanceMonitor.getSuccessRate('authentication')
-    const dbAvg = performanceMonitor.getAverageDuration('database_test_connection')
-    const dbSuccess = performanceMonitor.getSuccessRate('database_test_connection')
+    const dbAvg = performanceMonitor.getAverageDuration('databaseQuery')
+    const dbSuccess = performanceMonitor.getSuccessRate('databaseQuery')
 
     return NextResponse.json({
       success: true,

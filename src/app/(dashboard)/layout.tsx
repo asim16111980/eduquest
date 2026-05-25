@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { signOut } from '@/app/(auth)/login/actions'
 
 export default async function DashboardLayout({
   children,
@@ -57,7 +58,6 @@ export default async function DashboardLayout({
               </span>
               <form action={async () => {
                 'use server'
-                const { signOut } = await import('@/app/(auth)/login/actions')
                 await signOut()
               }}>
                 <button

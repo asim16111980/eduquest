@@ -1,13 +1,6 @@
 import { NextResponse } from 'next/server'
 import { testConnection, getUserSession } from '@/lib/queries/test'
-import { performanceMonitor } from '@/lib/performance'
 import { UserRole, hasRole } from '@/lib/types/database'
-
-const logger = {
-  error: (message: string, details?: Record<string, unknown>) => {
-    console.error(`[${new Date().toISOString()}] ERROR: ${message}`, details || '')
-  }
-}
 
 export async function GET() {
   try {
@@ -81,11 +74,6 @@ export async function GET() {
       }
     })
   } catch (error) {
-    logger.error('Test query API error', {
-      message: error instanceof Error ? error.message : 'Unknown error',
-      error
-    })
-
     return NextResponse.json(
       {
         success: false,

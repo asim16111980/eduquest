@@ -69,9 +69,17 @@ export const ROLE_COLORS = {
 
 // Role-based access control helper
 export function hasRole(userRole: UserRole, requiredRole: UserRole): boolean {
+  // Normalize userRole: if not in hierarchy, default to STUDENT (least-privileged)
   const userIndex = ROLE_HIERARCHY.indexOf(userRole)
+  const normalizedUserIndex = userIndex !== -1 ? userIndex : ROLE_HIERARCHY.indexOf(UserRole.STUDENT)
+  
   const requiredIndex = ROLE_HIERARCHY.indexOf(requiredRole)
-  return userIndex !== -1 && userIndex <= requiredIndex
+  // Validate requiredRole is in hierarchy, if not skip validation
+  if (requiredIndex === -1) {
+    return false
+  }
+  
+  return normalizedUserIndex <= requiredIndex
 }
 
 // User Profile - matches user_profiles table

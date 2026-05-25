@@ -5,6 +5,13 @@ import { redirect } from 'next/navigation'
 import { AuthenticationError } from '@/lib/errors'
 import { getAuthErrorMessage } from '@/lib/auth/errors'
 
+// Simple structured logger (matches pattern in src/lib/queries/test.ts)
+const logger = {
+  error: (message: string, details?: Record<string, unknown>) => {
+    console.error(`[${new Date().toISOString()}] ERROR: ${message}`, details || '')
+  }
+}
+
 export async function signIn(formData: FormData) {
   const email = formData.get('email') as string
   const password = formData.get('password') as string
@@ -33,10 +40,10 @@ export async function signIn(formData: FormData) {
 
   if (data.user) {
     // Set persistent session if remember-me is checked
-    if (remember === 'on') {
+    if (remember === 'on' && data.session) {
       await supabase.auth.setSession({
-        access_token: data.session?.access_token || '',
-        refresh_token: data.session?.refresh_token || '',
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token,
       })
     }
     // Redirect to dashboard after successful login
@@ -52,7 +59,7 @@ export async function signOut() {
   try {
     await supabase.auth.signOut()
   } catch (error) {
-    console.error('Sign out error:', error)
+    logger.error('Sign out error', { message: error instanceof Error ? error.message : 'Unknown error' })
     // Continue with redirect even if sign out fails
     // The user will be logged out on the next request
   }
