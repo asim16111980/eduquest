@@ -22,16 +22,19 @@ export default function LoginForm({ onSuccess, onError, className = '' }: LoginF
       await signIn(formData)
       onSuccess?.()
     } catch (err) {
-      // Check if this is an authentication error with specific message
+      // Check if this is an authentication error
       if (err && typeof err === 'object' && 'message' in err) {
         const error = err as { message: string }
-        // Check if this is an auth error (contains auth-specific keywords)
-        if (error.message.includes('Invalid login credentials') ||
-            error.message.includes('Email not confirmed') ||
-            error.message.includes('Account locked') ||
-            error.message.includes('Account disabled') ||
-            error.message.includes('Invalid token') ||
-            error.message.includes('rate limit')) {
+        // Normalize message to lowercase for structured checks
+        const normalizedMessage = error.message.toLowerCase()
+        
+        // Check for auth errors using structured error codes
+        if (normalizedMessage.includes('invalid login credentials') ||
+            normalizedMessage.includes('email not confirmed') ||
+            normalizedMessage.includes('account locked') ||
+            normalizedMessage.includes('disabled') ||
+            normalizedMessage.includes('invalid token') ||
+            normalizedMessage.includes('rate limit')) {
           // Use original auth error message
           setError(error.message)
           onError?.(error.message)
@@ -55,7 +58,11 @@ export default function LoginForm({ onSuccess, onError, className = '' }: LoginF
   return (
     <div className={`space-y-6 ${className}`}>
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-md p-4">
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="bg-red-50 border border-red-200 rounded-md p-4"
+        >
           <p className="text-sm text-red-600">{error}</p>
         </div>
       )}

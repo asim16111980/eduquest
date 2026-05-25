@@ -191,7 +191,7 @@ npm install @supabase/supabase-js @supabase/auth-helpers-nextjs
 
 ### 3. Configure Environment
 Create `.env.local`:
-```
+```env
 SUPABASE_URL=your_project_url
 SUPABASE_ANON_KEY=your_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_key

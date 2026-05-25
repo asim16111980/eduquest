@@ -51,7 +51,7 @@ class PerformanceMonitor {
     if (operation) {
       return this.metrics.filter(m => m.operation === operation)
     }
-    return this.metrics
+    return [...this.metrics]
   }
 
   getAverageDuration(operation: string): number {
@@ -84,9 +84,9 @@ export function startAuthTimer(): () => void {
 }
 
 export function startDbTimer(operation: string): () => void {
-  return performanceMonitor.startTimer(`database_${operation}`)
+  return performanceMonitor.startTimer('databaseQuery')
 }
 
 export function startApiTimer(operation: string): () => void {
-  return performanceMonitor.startTimer(`api_${operation}`)
+  return performanceMonitor.startTimer('apiResponse')
 }

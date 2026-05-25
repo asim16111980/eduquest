@@ -1,10 +1,22 @@
 import { NextResponse } from 'next/server'
 import { performanceMonitor } from '@/lib/performance'
 
+const logger = {
+  error: (message: string, details?: Record<string, unknown>) => {
+    console.error(`[${new Date().toISOString()}] ERROR: ${message}`, details || '')
+  }
+}
+
 export async function GET() {
   try {
     const authMetrics = performanceMonitor.getMetrics('authentication')
     const dbMetrics = performanceMonitor.getMetrics('database_test_connection')
+
+    // Compute once per request to avoid drift
+    const authAvg = performanceMonitor.getAverageDuration('authentication')
+    const authSuccess = performanceMonitor.getSuccessRate('authentication')
+    const dbAvg = performanceMonitor.getAverageDuration('database_test_connection')
+    const dbSuccess = performanceMonitor.getSuccessRate('database_test_connection')
 
     return NextResponse.json({
       success: true,
@@ -12,29 +24,29 @@ export async function GET() {
       metrics: {
         authentication: {
           count: authMetrics.length,
-          averageMs: performanceMonitor.getAverageDuration('authentication'),
-          successRate: performanceMonitor.getSuccessRate('authentication'),
+          averageMs: authAvg,
+          successRate: authSuccess,
           latest: authMetrics.slice(-5),
           threshold: 200
         },
         database: {
           count: dbMetrics.length,
-          averageMs: performanceMonitor.getAverageDuration('database_test_connection'),
-          successRate: performanceMonitor.getSuccessRate('database_test_connection'),
+          averageMs: dbAvg,
+          successRate: dbSuccess,
           latest: dbMetrics.slice(-5),
           threshold: 100
         }
       },
       summary: {
         totalOperations: authMetrics.length + dbMetrics.length,
-        targetMet: (
-          performanceMonitor.getAverageDuration('authentication') <= 200 &&
-          performanceMonitor.getAverageDuration('database_test_connection') <= 100
-        )
+        targetMet: authAvg <= 200 && dbAvg <= 100
       }
     })
   } catch (error) {
-    console.error('Performance monitoring API error:', error)
+    logger.error('Performance monitoring API error', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      error
+    })
 
     return NextResponse.json(
       {

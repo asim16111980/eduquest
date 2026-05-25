@@ -1,10 +1,19 @@
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  
+  if (!user) {
+    redirect('/auth/login')
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -42,8 +51,22 @@ export default function DashboardLayout({
                 </Link>
               </nav>
             </div>
-            <div className="flex items-center">
-              <span className="text-sm text-gray-700">Admin User</span>
+            <div className="flex items-center space-x-4">
+              <span className="text-sm text-gray-700">
+                {user.email || 'User'}
+              </span>
+              <form action={async () => {
+                'use server'
+                const { signOut } = await import('@/app/(auth)/login/actions')
+                await signOut()
+              }}>
+                <button
+                  type="submit"
+                  className="text-sm text-gray-600 hover:text-gray-900"
+                >
+                  Sign out
+                </button>
+              </form>
             </div>
           </div>
         </div>
