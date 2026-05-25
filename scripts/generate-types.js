@@ -58,6 +58,22 @@ export const ROLE_HIERARCHY = [
   UserRole.STUDENT,
 ]
 
+// Role colors for UI display
+export const ROLE_COLORS = {
+  [UserRole.SUPER_ADMIN]: 'text-purple-600 bg-purple-100',
+  [UserRole.CONTENT_MANAGER]: 'text-blue-600 bg-blue-100',
+  [UserRole.TEACHER]: 'text-green-600 bg-green-100',
+  [UserRole.VIEWER]: 'text-gray-600 bg-gray-100',
+  [UserRole.STUDENT]: 'text-orange-600 bg-orange-100',
+}
+
+// Role-based access control helper
+export function hasRole(userRole: UserRole, requiredRole: UserRole): boolean {
+  const userIndex = ROLE_HIERARCHY.indexOf(userRole)
+  const requiredIndex = ROLE_HIERARCHY.indexOf(requiredRole)
+  return userIndex !== -1 && userIndex <= requiredIndex
+}
+
 // User Profile - matches user_profiles table
 export interface UserProfile {
   id: string

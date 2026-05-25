@@ -42,20 +42,21 @@ try {
 # Test 3: Check if API routes are protected
 Write-Host "`n3. Testing API route protection..." -ForegroundColor Yellow
 try {
-    $response = Invoke-WebRequest -Uri "http://localhost:3000/api/test" -UseBasicParsing
-    if ($response.StatusCode -eq 401) {
+    $response = Invoke-WebRequest -Uri "http://localhost:3000/api/test" -UseBasicParsing -ErrorAction Stop -MaximumRedirection 0
+    # Should not get here - 401 should throw
+    Write-Host "✗ Expected 401 but got response: $($response.StatusCode)" -ForegroundColor Red
+} catch {
+    if ($_.Exception.Response.StatusCode -eq 401) {
         Write-Host "✓ API route correctly returns 401 when not authenticated" -ForegroundColor Green
     } else {
-        Write-Host "✗ API route returned status code: $($response.StatusCode)" -ForegroundColor Red
+        Write-Host "✗ Unexpected error: $($_.Exception.Message)" -ForegroundColor Red
     }
-} catch {
-    Write-Host "✗ Failed to test API route protection" -ForegroundColor Red
 }
 
 # Test 4: Check if login form validation works
 Write-Host "`n4. Testing login form validation..." -ForegroundColor Yellow
 Write-Host "   (Manual check required:)" -ForegroundColor Yellow
-Write-Host "   - Open http://localhost:3000/auth/login in browser" -ForegroundColor Yellow
+Write-Host "   - Open http://localhost:3000/login in browser" -ForegroundColor Yellow
 Write-Host "   - Try submitting with empty fields" -ForegroundColor Yellow
 Write-Host "   - Try submitting with invalid email format" -ForegroundColor Yellow
 Write-Host "   - Check for appropriate error messages" -ForegroundColor Yellow

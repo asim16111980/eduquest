@@ -8,6 +8,7 @@ import { getAuthErrorMessage } from '@/lib/auth/errors'
 export async function signIn(formData: FormData) {
   const email = formData.get('email') as string
   const password = formData.get('password') as string
+  const remember = formData.get('remember-me') as string
 
   if (!email || !password) {
     throw new AuthenticationError('Email and password are required')
@@ -31,8 +32,17 @@ export async function signIn(formData: FormData) {
   }
 
   if (data.user) {
+    // Set persistent session if remember-me is checked
+    if (remember === 'on') {
+      await supabase.auth.setSession({
+        access_token: data.session?.access_token || '',
+        refresh_token: data.session?.refresh_token || '',
+      })
+    }
     // Redirect to dashboard after successful login
     redirect('/dashboard')
+  } else {
+    throw new AuthenticationError('SignIn with password returned no user data')
   }
 }
 
