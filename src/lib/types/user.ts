@@ -1,21 +1,26 @@
+// UserRole is exported from roles.ts
+import { UserRole } from './roles'
+
 export interface UserProfile {
   id: string
-  email: string
-  first_name: string
-  last_name: string
+  userId: string
   role: UserRole
-  avatar_url?: string
-  is_active: boolean
-  email_verified: boolean
-  created_at: string
-  updated_at: string
-  last_login_at?: string
+  displayName: string | null
+  avatarUrl: string | null
+  createdAt: string
+  updatedAt: string
 }
 
-export enum UserRole {
-  SUPER_ADMIN = 'super_admin',
-  CONTENT_MANAGER = 'content_manager',
-  TEACHER = 'teacher',
-  VIEWER = 'viewer',
-  STUDENT = 'student',
+export interface AuthUser {
+  id: string
+  email: string
+  encryptedPassword: string | null
+  emailConfirmedAt: string | null
+  createdAt: string
+  updatedAt: string
+  appMetadata: Record<string, unknown>
+  userMetadata: Record<string, unknown>
 }
+
+// Re-export UserRole for convenience
+export { UserRole }

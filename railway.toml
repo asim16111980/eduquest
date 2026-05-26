@@ -1,0 +1,45 @@
+# Railway configuration for EduQuest Admin Dashboard
+# This file configures Railway deployment settings
+
+[build]
+command = "npm run build"
+
+[deploy]
+startCommand = "npm start"
+
+# Health check configuration
+[healthcheck]
+path = "/api/health"
+interval = 30
+timeout = 10
+retries = 3
+grace_period = 60
+
+[env]
+# Environment variables that will be set in Railway dashboard
+NODE_ENV = "production"
+PORT = "3000"
+
+# Supabase configuration
+SUPABASE_URL = ""
+SUPABASE_ANON_KEY = ""
+SUPABASE_SERVICE_ROLE_KEY = ""
+
+# Performance monitoring
+SENTRY_DSN = ""
+
+# Logging
+LOG_LEVEL = "info"
+
+# Performance optimization
+BUNDLE_ANALYZE = "false"
+
+# Metrics collection
+COLLECT_METRICS = "true"
+
+# Security
+NODE_ENV = "production"
+
+# Database connection pool (if needed)
+DB_POOL_MIN = "2"
+DB_POOL_MAX = "10"

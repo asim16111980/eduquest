@@ -1,0 +1,68 @@
+name: Test CI Pipeline
+
+on:
+  workflow_dispatch:  # Allow manual triggering
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main, 002-dev-bootstrap]
+
+jobs:
+  test-ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify CI configuration
+        run: |
+          echo "=== Testing CI Pipeline Configuration ==="
+
+          # Check if CI workflow exists
+          if [ -f ".github/workflows/ci.yml" ]; then
+            echo "✓ CI workflow file exists"
+          else
+            echo "✗ CI workflow file missing"
+            exit 1
+          fi
+
+          # Check railway.toml configuration
+          if [ -f "railway.toml" ]; then
+            echo "✓ Railway configuration exists"
+
+            # Check required sections
+            if grep -q "\[build\]" railway.toml && grep -q "\[deploy\]" railway.toml; then
+              echo "✓ Railway build/deploy sections configured"
+            else
+              echo "✗ Railway configuration incomplete"
+              exit 1
+            fi
+          else
+            echo "✗ Railway configuration missing"
+            exit 1
+          fi
+
+          # Check package.json scripts
+          if npm run lint --silent > /dev/null 2>&1; then
+            echo "✓ Lint script available"
+          else
+            echo "✗ Lint script missing or failing"
+            exit 1
+          fi
+
+          if npm run build --silent > /dev/null 2>&1; then
+            echo "✓ Build script successful"
+          else
+            echo "✗ Build script failing"
+            exit 1
+          fi
+
+          echo "=== CI Pipeline Test Passed ==="

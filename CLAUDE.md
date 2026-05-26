@@ -129,5 +129,10 @@ This repo uses Speckit for structured development. Feature specs live in `specs/
 - `specs/001-db-bootstrap/data-model.md` — database entity design
 - `specs/001-db-bootstrap/tasks.md` — task tracking with dependencies
 - `specs/001-db-bootstrap/quickstart.md` — setup guide
+- `specs/002-dev-bootstrap/plan.md` — **Development Bootstrap plan** (current: User Stories 1-5)
+- `specs/002-dev-bootstrap/data-model.md` — domain types and entities
+- `specs/002-dev-bootstrap/research.md` — technical decisions for bootstrap phase
+- `specs/002-dev-bootstrap/tasks.md` — **Development Bootstrap tasks** (current)
+- `specs/002-dev-bootstrap/quickstart.md` — **setup guide for bootstrap phase**
 - `docs/implementation-plan.md` — master plan across all 7 phases (66 work items)
 - `.specify/memory/constitution.md` — project constitution (v1.0.0)

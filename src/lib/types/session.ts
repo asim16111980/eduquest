@@ -1,11 +1,11 @@
-import { UserProfile } from './user'
+import type { UserProfile } from './user'
 
 export interface UserSession {
-  access_token: string
-  refresh_token: string
-  expires_in: number
-  token_type: string
-  user: UserProfile
+  id: string
+  userId: string
+  createdAt: string
+  expiresAt: string
+  metadata: Record<string, unknown> | null
 }
 
 export interface SessionState {

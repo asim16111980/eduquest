@@ -1,4 +1,11 @@
-import { UserRole } from './user'
+// UserRole enum - must be defined independently since it's used by other types
+export enum UserRole {
+  SUPER_ADMIN = 'super_admin',
+  CONTENT_MANAGER = 'content_manager',
+  TEACHER = 'teacher',
+  VIEWER = 'viewer',
+  STUDENT = 'student',
+}
 
 export const ROLE_HIERARCHY: UserRole[] = [
   UserRole.SUPER_ADMIN,

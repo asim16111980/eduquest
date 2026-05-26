@@ -1,359 +1,333 @@
-# EduQuest Admin Dashboard Setup Guide
+# EduQuest Admin Dashboard - Complete Setup Guide
 
-**Date**: 2026-05-10  
-**Project**: EduQuest Admin Dashboard  
-**Environment**: Railway + Supabase
-**Version**: 1.0
-
-## Overview
-
-This comprehensive setup guide provides step-by-step instructions for setting up the EduQuest admin dashboard infrastructure. The guide covers project creation, security configuration, Realtime setup, and deployment preparation.
-
-## Table of Contents
-
-1. [Prerequisites](#prerequisites)
-2. [Phase 1: Project Setup](#phase-1-project-setup)
-3. [Phase 2: Foundational Configuration](#phase-2-foundational-configuration)
-4. [Phase 3: Security Configuration](#phase-3-security-configuration)
-5. [Phase 4: Realtime Setup](#phase-4-realtime-setup)
-6. [Phase 5: Environment Configuration](#phase-5-environment-configuration)
-7. [Phase 6: Verification & Testing](#phase-6-verification--testing)
-8. [Phase 7: Deployment](#phase-7-deployment)
-9. [Troubleshooting](#troubleshooting)
+This guide provides step-by-step instructions for setting up the EduQuest Admin Dashboard with full CI/CD pipeline.
 
 ## Prerequisites
 
-### Required Accounts
-- **Railway Account**: Active Railway account with project created
-- **Supabase Account**: Active Supabase account
-- **Git Repository**: Clean working directory
+### System Requirements
+- Node.js 20 or higher
+- npm or yarn
+- Git
+- Supabase CLI (for database setup)
 
-### Required Tools
-- **Supabase CLI**: Installed and authenticated (`supabase login`)
-- **Git**: Version control system
-- **Node.js**: v18+ for development
-- **Railway CLI**: For deployment (optional)
+### Accounts Needed
+- GitHub account
+- Railway account
+- Supabase account
 
-### Required Files
-- `.env.local` with environment variables
-- `.env.local.template` as reference
-- `.gitignore` for secrets protection
+## Quick Start
 
-## Phase 1: Project Setup
-
-### 1.1 Create Railway Project
-
-1. **Railway Dashboard Setup**
-   ```bash
-   # Create new Railway project
-   railway init
-   # Select appropriate template and configure
-   ```
-
-2. **Configure Railway Domain**
-   - Set domain to: `eduquest-admin.railway.app`
-   - Configure build and start commands
-   - Set environment variables (see Phase 5)
-
-### 1.2 Initialize Git Repository
-
+### 1. Clone Repository
 ```bash
-# Initialize git repo
-git init
-
-# Add .gitignore
-git add .gitignore
-git commit -m "Initial commit: Add gitignore configuration"
-
-# Link to remote repository
-git remote add origin <your-repo-url>
-git branch -M 001-db-bootstrap
-git push -u origin 001-db-bootstrap
+git clone https://github.com/your-username/eduquest.git
+cd eduquest
 ```
 
-## Phase 2: Foundational Configuration
-
-### 2.1 Environment Setup
-
-1. **Create Environment Files**
-   ```bash
-   # Copy template to actual environment file
-   cp .env.local.template .env.local
-   
-   # Edit .env.local with actual values
-   # Get values from Supabase Dashboard -> Settings -> API
-   ```
-
-2. **Verify Environment Configuration**
-   ```bash
-   # Run environment validation
-   ./scripts/verify/verify-env.sh
-   
-   # Expected: All checks pass
-   ```
-
-### 2.2 Install Dependencies
-
+### 2. Install Dependencies
 ```bash
-# Install Node.js dependencies
 npm install
-
-# Install Supabase CLI (if not already installed)
-npm install -g supabase
 ```
 
-## Phase 3: Security Configuration
-
-### 3.1 Supabase Project Creation
-
-1. **Create Supabase Project**
-   ```bash
-   # Use Supabase dashboard or CLI
-   # Dashboard: https://app.supabase.com -> New Project
-   # CLI: supabase new --name eduquest-admin
-   ```
-
-2. **Configure Project Settings**
-   - **Project Name**: eduquest-admin
-   - **Region**: US East
-   - **Database Password**: Generate strong password
-   - **Organization**: Your organization
-
-### 3.2 Authentication Configuration
-
-1. **Site URL Configuration**
-   - **Site URL**: `https://eduquest-admin.railway.app`
-   - **Redirect URL**: `https://eduquest-admin.railway.app/auth/callback`
-
-2. **Email Provider Setup**
-   - Enable Email provider
-   - Enable PKCE flow
-   - Disable signups (admin-only access)
-
-### 3.3 Run Security Setup Script
-
+### 3. Configure Environment
+Create `.env.local` file:
 ```bash
-# Execute security configuration
-./scripts/setup/security-config.sh
-
-# This will:
-# - Enable RLS globally
-# - Create basic policies
-# - Configure authentication
-# - Set up security verification
+cp .env.local.example .env.local
+# Edit with your Supabase credentials
 ```
 
-## Phase 4: Realtime Setup
-
-### 4.1 Enable Realtime Service
-
-1. **Supabase Dashboard Configuration**
-   - Go to Settings → Realtime
-   - Enable Realtime service
-   - Configure tables for broadcasting
-
-### 4.2 Configure Realtime Tables
-
+### 4. Run Development Server
 ```bash
-# Execute Realtime setup script
-./scripts/setup/realtime-setup.sh
-
-# This configures:
-# - activity_logs table for Realtime
-# - leaderboard_snapshots table for Realtime
-# - Proper permissions and channels
+npm run dev
 ```
 
-### 4.3 Verify Realtime Configuration
+Visit http://localhost:3000
 
+## Detailed Setup
+
+### Phase 1: Project Initialization
+
+#### 1.1 Verify Dependencies
 ```bash
-# Check Realtime status
-supabase realtime list
-
-# Verify tables are configured
-# Dashboard: Settings → Realtime → Tables
+node --version  # Should be 20.x+
+npm --version   # Should be 9.x+
 ```
 
-## Phase 5: Environment Configuration
-
-### 5.1 Railway Environment Variables
-
-Add these variables to Railway Dashboard → Variables:
-
-```env
-# Required Variables
-SUPABASE_URL=https://your-project-ref.supabase.co
-SUPABASE_ANON_KEY=your_anon_key_here
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
-
-# Optional Variables
-SITE_URL=https://eduquest-admin.railway.app
-AUTH_CALLBACK_URL=https://eduquest-admin.railway.app/auth/callback
-```
-
-### 5.2 Local Development Setup
-
-1. **Update .env.local**
-   ```bash
-   # Edit .env.local with actual values
-   # Ensure no secrets are committed
-   ```
-
-2. **Test Local Connection**
-   ```bash
-   # Test environment validation
-   ./scripts/verify/verify-env.sh
-   
-   # Test authentication
-   ./scripts/test-auth.sh
-   ```
-
-## Phase 6: Verification & Testing
-
-### 6.1 Environment Validation
-
+#### 1.2 Install Global Dependencies
 ```bash
-# Comprehensive environment validation
-./scripts/verify/verify-env.sh
-
-# Check:
-# - All required variables present
-# - Proper format validation
-# - Gitignore protection
-# - Railway domain configuration
+npm install -g @railway/cli
+npm install -g supabase-cli
 ```
 
-### 6.2 Authentication Testing
-
+#### 1.3 Setup Git Repository
 ```bash
-# Test authentication flow
-./scripts/test-auth.sh
-
-# This tests:
-# - User creation
-# - Authentication
-# - Session management
-# - PKCE flow
+git init
+git add .
+git commit -m "Initial commit"
 ```
 
-### 6.3 Connection Verification
+### Phase 2: Database Setup (Area 1)
 
+#### 2.1 Initialize Supabase Project
 ```bash
-# Test CLI connection
+supabase new
+# Follow prompts to create new project
+```
+
+#### 2.2 Link Local Project
+```bash
 supabase link --project-ref YOUR_PROJECT_REF
-supabase status
+```
 
-# Test API connection
+#### 2.3 Run Setup Scripts
+```bash
+# Setup scripts must be run in order
+./scripts/setup/supabase-project-setup.sh
+./scripts/setup/security-config.sh
+./scripts/setup/realtime-setup.sh
+```
+
+#### 2.4 Verify Database Connection
+```bash
 ./scripts/verify/project-connection.sh
 ```
 
-### 6.4 Security Verification
+### Phase 3: Application Setup (Area 2)
 
+#### 3.1 Configure Railway
 ```bash
-# Check security configuration
-./scripts/verify/security-verification.sh
-
-# Verify:
-# - RLS is enabled
-# - Policies are created
-# - Authentication is working
+railway login
+railway init
 ```
 
-### 6.5 Run Complete Verification Suite
+#### 3.2 Set Environment Variables in Railway Dashboard
+Required variables:
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `NODE_ENV=production`
 
+#### 3.3 Verify Configuration
 ```bash
-# Run all verification scripts
-./scripts/verify/verify-env.sh
-./scripts/verify/project-connection.sh
-./scripts/verify/security-verification.sh
-./scripts/test-auth.sh
+node scripts/verification/ci-verification.js
 ```
 
-## Phase 7: Deployment
+### Phase 4: CI/CD Pipeline Setup
 
-### 7.1 Pre-Deployment Checklist
-
-Complete the deployment checklist:
-```bash
-# Review deployment checklist
-cat docs/deployment-checklist.md
-
-# Use checklist to verify all requirements
-```
-
-### 7.2 Deployment Script (Optional)
-
-If using the deployment script:
-```bash
-# Run deployment script
-./scripts/deploy.sh --dry-run  # Test deployment
-./scripts/deploy.sh           # Actual deployment
-```
-
-### 7.3 Post-Deployment Verification
-
-1. **Access Application**
-   - Visit: `https://eduquest-admin.railway.app`
-   - Verify all functionality works
-
-2. **Test Production Environment**
+#### 4.1 Configure GitHub Repository
+1. Create GitHub repository
+2. Push code to GitHub:
    ```bash
-   # Test with production variables
-   ./scripts/test-auth.sh
-   
-   # Verify Realtime works
-   # Test authentication flow
+   git remote add origin https://github.com/your-username/eduquest.git
+   git push -u origin main
    ```
 
-3. **Monitor Deployment**
-   - Check Railway dashboard for errors
-   - Monitor application logs
-   - Verify database connections
+#### 4.2 Verify CI Pipeline
+The CI pipeline includes:
+- **Lint**: ESLint code quality checks
+- **Type Check**: TypeScript type validation
+- **Build**: Next.js build process
+- **Test**: Playwright E2E tests
+- **Security**: CodeQL security analysis
 
-## Verification Commands
-
-### Quick Verification
-
+#### 4.3 Test Deployment
 ```bash
-# Quick status check
-echo "=== Environment Status ==="
-./scripts/verify/verify-env.sh
-
-echo "=== Authentication Status ==="  
-./scripts/test-auth.sh
-
-echo "=== Project Connection ==="
-supabase status
-
-echo "=== Realtime Status ==="
-supabase realtime list
+node scripts/deployment/test-deployment.js
 ```
 
-### Detailed Verification
+## Development Workflow
 
+### Daily Development
 ```bash
-# Comprehensive verification suite
-./scripts/verify/phase2-verification.sh
+# Start development server
+npm run dev
 
-# This runs all verification steps in order
-# and provides detailed reporting
+# Run linting
+npm run lint
+
+# Type check
+npx tsc --noEmit
+
+# Build for production
+npm run build
 ```
+
+### Testing
+```bash
+# Run unit tests
+npm test
+
+# Run E2E tests
+npm run test:e2e
+
+# Run all tests
+npm run test:all
+```
+
+### Deployment Process
+
+#### Manual Deployment
+```bash
+# Build locally
+npm run build
+
+# Deploy to Railway
+railway up
+```
+
+#### Auto-Deployment (Recommended)
+1. Make changes
+2. Commit: `git commit -m "Description"`
+3. Push: `git push origin main`
+4. Railway automatically deploys
+
+## Monitoring and Maintenance
+
+### Health Checks
+- Application health: `https://your-app.railway.app/api/health`
+- Railway dashboard: Monitor deployments and logs
+- Error tracking: Configure Sentry if needed
+
+### Performance Monitoring
+```bash
+# Analyze bundle size
+npm run analyze
+
+# Monitor deployment performance
+node scripts/monitoring/deployment-performance.js
+```
+
+### Rollback Procedures
+```bash
+# View deployment history
+railway deployments
+
+# Rollback to previous version
+railway rollback
+
+# Or via Railway dashboard
+```
+
+## Configuration Files
+
+### Railway Configuration (`railway.toml`)
+```toml
+[build]
+command = "npm run build"
+
+[deploy]
+startCommand = "npm start"
+
+[healthcheck]
+path = "/api/health"
+interval = 30
+timeout = 10
+retries = 3
+```
+
+### CI Pipeline (`.github/workflows/ci.yml`)
+Runs on:
+- Push to main/002-dev-bootstrap branches
+- Pull requests to main
+
+Jobs:
+- lint, typecheck, build, test, security
+
+### Environment Variables
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `SUPABASE_URL` | Supabase project URL | Yes |
+| `SUPABASE_ANON_KEY` | Public anonymous key | Yes |
+| `SUPABASE_SERVICE_ROLE_KEY` | Service role key | Yes |
+| `NODE_ENV` | Environment (development/production) | Yes |
 
 ## Troubleshooting
 
-See [Troubleshooting Guide](./troubleshooting.md) for detailed solutions to common issues.
+### Common Issues
 
-## Support
+#### Build Failures
+```bash
+# Clear node_modules and reinstall
+rm -rf node_modules package-lock.json
+npm install
 
-- **Supabase Documentation**: https://supabase.com/docs
-- **Railway Documentation**: https://docs.railway.app
-- **Project Issues**: GitHub Issues
-- **Contact**: Project maintainers
+# Check TypeScript errors
+npx tsc --noEmit
+```
 
-## Related Documentation
+#### Railway Deployment Issues
+```bash
+# Check Railway status
+railway status
 
-- [Quick Start Guide](../specs/001-db-bootstrap/quickstart.md)
-- [Railway Environment Variables](./railway-env-vars.md)
-- [Deployment Checklist](./deployment-checklist.md)
-- [Project Setup Reference](./project-setup.md)
-- [Troubleshooting Guide](./troubleshooting.md)
+# View logs
+railway logs
+
+# Reset deployment
+railway down
+railway up
+```
+
+#### Database Connection Issues
+```bash
+# Verify Supabase connection
+supabase status
+
+# Check RLS policies
+supabase db reset
+```
+
+### Getting Help
+
+1. **Documentation**: See `docs/` directory
+2. **Troubleshooting Guide**: `docs/troubleshooting.md`
+3. **Issue Tracker**: GitHub Issues
+4. **Community**: EduQuest Discord/Slack
+
+## Next Steps
+
+1. **Setup Database**: Follow Phase 2 instructions
+2. **Configure Railway**: Set up deployment environment
+3. **Test Pipeline**: Create a pull request to test CI
+4. **Deploy**: Merge to main for auto-deployment
+5. **Monitor**: Set up monitoring and alerts
+
+## Quick Reference Commands
+
+```bash
+# Development
+npm run dev          # Start dev server
+npm run build        # Build for production
+npm run start        # Start production server
+
+# Testing
+npm test             # Run tests
+npm run lint         # Check code style
+
+# Deployment
+railway up           # Deploy to Railway
+railway logs         # View deployment logs
+railway rollback     # Rollback deployment
+
+# Database
+supabase status      # Check Supabase status
+supabase db push     # Apply migrations
+```
+
+## Performance Targets
+
+- **LCP**: < 2.5 seconds
+- **Deployment Time**: < 5 minutes
+- **Error Rate**: < 0.1%
+- **Uptime**: 99.9%
+
+## Security Best Practices
+
+1. Never commit secrets to git
+2. Use environment variables for sensitive data
+3. Enable Railway automatic HTTPS
+4. Implement proper CORS policies
+5. Use Supabase RLS for data access control
+
+---
+
+For more detailed information, see the specific documentation files in the `docs/` directory.
