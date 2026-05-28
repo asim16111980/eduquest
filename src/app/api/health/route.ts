@@ -8,7 +8,7 @@ export async function GET() {
 
     // Simple query to test database connection
     const { data, error } = await supabase
-      .from('profiles')
+      .from('user_profiles')
       .select('id')
       .limit(1)
 

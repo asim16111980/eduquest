@@ -1,178 +1,162 @@
-'use client';
+'use client'
 
-import { useEffect, useState } from 'react';
-import { Card } from '@/components/shared/Card';
-import { LineChart } from '@/components/shared/LineChart';
-import { BarChart } from '@/components/shared/BarChart';
+import { useState, useEffect } from 'react'
+import { Card } from '@/components/shared/Card'
+import { DashboardSectionBoundary } from '@/components/shared/ErrorBoundary'
 
-interface MetricsData {
-  timestamp: string;
-  memory: {
-    rss: number;
-    heapTotal: number;
-    heapUsed: number;
-    external: number;
-  };
-  uptime: number;
-  database: {
-    status: string;
-    latency: number;
-  };
-  performance: {
-    requests: number;
-    errors: number;
-    avgResponseTime: number;
-  };
+interface HealthStatus {
+  status: 'healthy' | 'unhealthy'
+  timestamp: string
+  uptime: number
+  memory: NodeJS.MemoryUsage
+  database: 'up' | 'down'
+  error?: string
+  details?: string
 }
 
 export default function MonitoringPage() {
-  const [metrics, setMetrics] = useState<MetricsData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [healthStatus, setHealthStatus] = useState<HealthStatus | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [lastCheck, setLastCheck] = useState<Date | null>(null)
 
-  const fetchMetrics = async () => {
+  const fetchHealthStatus = async () => {
     try {
-      const response = await fetch('/api/health');
-      const data = await response.json();
-
-      if (response.ok) {
-        setMetrics(data);
-      } else {
-        setError(data.error || 'Failed to fetch metrics');
-      }
-    } catch (err) {
-      setError('Network error');
+      const response = await fetch('/api/health')
+      const data = await response.json()
+      setHealthStatus(data)
+      setLastCheck(new Date())
+    } catch (error) {
+      console.error('Failed to fetch health status:', error)
     } finally {
-      setLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   useEffect(() => {
-    fetchMetrics();
-    const interval = setInterval(fetchMetrics, 30000); // Refresh every 30 seconds
+    fetchHealthStatus()
+    const interval = setInterval(fetchHealthStatus, 30000) // Check every 30 seconds
+    return () => clearInterval(interval)
+  }, [])
 
-    return () => clearInterval(interval);
-  }, []);
-
-  const formatBytes = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
+  const formatMemoryUsage = (usage: NodeJS.MemoryUsage) => {
+    const mb = (value: number) => Math.round(value / 1024 / 1024)
+    return `RSS: ${mb(usage.rss)}MB, Heap: ${mb(usage.heapUsed)}MB, Total: ${mb(usage.heapTotal)}MB`
+  }
 
   const formatUptime = (seconds: number) => {
-    const days = Math.floor(seconds / 86400);
-    const hours = Math.floor((seconds % 86400) / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    return `${days}d ${hours}h ${minutes}m`;
-  };
+    const days = Math.floor(seconds / 86400)
+    const hours = Math.floor((seconds % 86400) / 3600)
+    const minutes = Math.floor((seconds % 3600) / 60)
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-lg text-gray-600">Loading metrics...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-lg text-red-600">Error: {error}</div>
-      </div>
-    );
-  }
-
-  if (!metrics) {
-    return null;
+    if (days > 0) return `${days}d ${hours}h ${minutes}m`
+    if (hours > 0) return `${hours}h ${minutes}m`
+    return `${minutes}m`
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">System Monitoring</h1>
-        <button
-          onClick={fetchMetrics}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-        >
-          Refresh
-        </button>
-      </div>
-
-      {/* Status Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card title="System Status">
-          <div className="flex items-center space-x-2">
-            <div className={`w-3 h-3 rounded-full ${
-              metrics.database.status === 'up' ? 'bg-green-500' : 'bg-red-500'
-            }`} />
-            <span className="text-sm">
-              {metrics.database.status === 'up' ? 'Healthy' : 'Degraded'}
+    <DashboardSectionBoundary title="System Monitoring" id="monitoring">
+      <div className="container mx-auto py-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">System Monitoring</h1>
+        <p className="text-muted-foreground">
+          Real-time monitoring of application health and performance
+          {lastCheck && (
+            <span className="ml-2 text-sm">
+              Last checked: {lastCheck.toLocaleTimeString()}
             </span>
-          </div>
-        </Card>
-
-        <Card title="Uptime">
-          <div className="text-sm">{formatUptime(metrics.uptime)}</div>
-        </Card>
-
-        <Card title="Database Latency">
-          <div className="text-sm">
-            {metrics.database.latency}ms
-            {metrics.database.latency > 200 && (
-              <span className="text-red-500 ml-2">Slow</span>
-            )}
-          </div>
-        </Card>
-
-        <Card title="Memory Usage">
-          <div className="text-sm">
-            <div>Used: {formatBytes(metrics.memory.heapUsed)}</div>
-            <div>Total: {formatBytes(metrics.memory.heapTotal)}</div>
-          </div>
-        </Card>
+          )}
+        </p>
       </div>
 
-      {/* Memory Chart */}
-      <Card title="Memory Usage">
-        <LineChart
-          data={[
-            { timestamp: new Date().toISOString(), used: metrics.memory.heapUsed, total: metrics.memory.heapTotal }
-          ]}
-          xKey="timestamp"
-          yKey="used"
-          title="Memory Usage (MB)"
-        />
-      </Card>
-
-      {/* Performance Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card title="Request Performance">
-          <BarChart
-            data={[
-              { name: 'Requests', value: metrics.performance.requests },
-              { name: 'Errors', value: metrics.performance.errors }
-            ]}
-            xKey="name"
-            yKey="value"
-          />
-        </Card>
-
-        <Card title="Response Times">
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <span>Average Response Time:</span>
-              <span>{metrics.performance.avgResponseTime}ms</span>
+      {isLoading ? (
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      ) : (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <Card title="System Status">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span>Overall Status</span>
+                <span className={`px-2 py-1 rounded text-xs ${
+                  healthStatus?.status === 'healthy' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                }`}>
+                  {healthStatus?.status}
+                </span>
+              </div>
+              {healthStatus?.error && (
+                <div className="text-red-600 text-sm">
+                  Error: {healthStatus.error}
+                </div>
+              )}
+              {healthStatus?.details && (
+                <div className="text-red-600 text-sm">
+                  Details: {healthStatus.details}
+                </div>
+              )}
             </div>
-            <div className="flex justify-between">
-              <span>Database Latency:</span>
-              <span>{metrics.database.latency}ms</span>
+          </Card>
+
+          <Card title="Performance Metrics">
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span>Uptime</span>
+                <span className="font-mono">
+                  {healthStatus?.uptime ? formatUptime(healthStatus.uptime) : 'N/A'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>Memory Usage</span>
+                <span className="font-mono">
+                  {healthStatus?.memory ? formatMemoryUsage(healthStatus.memory) : 'N/A'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>Heap Used</span>
+                <span className="font-mono">
+                  {healthStatus?.memory ? `${Math.round(healthStatus.memory.heapUsed / 1024 / 1024)}MB` : 'N/A'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>Heap Total</span>
+                <span className="font-mono">
+                  {healthStatus?.memory ? `${Math.round(healthStatus.memory.heapTotal / 1024 / 1024)}MB` : 'N/A'}
+                </span>
+              </div>
             </div>
-          </div>
-        </Card>
-      </div>
+          </Card>
+
+          <Card title="Database Status">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                {healthStatus?.database === 'up' ? (
+                  <>
+                    <div className="h-2 w-2 bg-green-500 rounded-full"></div>
+                    <span className="text-green-600">Connected</span>
+                  </>
+                ) : (
+                  <>
+                    <div className="h-2 w-2 bg-red-500 rounded-full"></div>
+                    <span className="text-red-600">Disconnected</span>
+                  </>
+                )}
+              </div>
+              {healthStatus?.status === 'unhealthy' && healthStatus.error && (
+                <div className="text-sm text-red-600">
+                  Error: {healthStatus.error}
+                </div>
+              )}
+            </div>
+          </Card>
+
+          <Card title="Health Check Details" className="md:col-span-2 lg:col-span-3">
+            <pre className="text-xs bg-muted p-3 rounded overflow-auto max-h-48">
+              {JSON.stringify(healthStatus, null, 2)}
+            </pre>
+          </Card>
+        </div>
+      )}
     </div>
-  );
+    </DashboardSectionBoundary>
+  )
 }
