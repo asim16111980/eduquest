@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { signIn } from '@/app/(auth)/login/actions'
 import { getUserFriendlyMessage } from '@/lib/errors'
+import { NextResponse } from 'next/server'
 
 interface LoginFormProps {
   onSuccess?: () => void
@@ -10,23 +11,32 @@ interface LoginFormProps {
   className?: string
 }
 
-export default function LoginForm({ onSuccess, onError, className = '' }: LoginFormProps) {
+ export default function LoginForm({ onSuccess, onError, className = '' }: LoginFormProps) {
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const handleSubmit = async (formData: FormData) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
     setIsSubmitting(true)
     setError(null)
 
+    const formData = new FormData(e.currentTarget)
+    
     try {
-      await signIn(formData)
+      await signIn(formData, undefined)
+      // If we get here without exception, redirect happened - success
       onSuccess?.()
-    } catch (err) {
-      const errorMessage = getUserFriendlyMessage(err)
-      setError(errorMessage)
-      onError?.(errorMessage)
-    } finally {
+    } catch (err: any) {
       setIsSubmitting(false)
+      // Next.js redirect throws a special error with digest starting with 'NEXT_REDIRECT'
+      if (err?.digest?.startsWith('NEXT_REDIRECT')) {
+        // This is actually a success - redirect will happen automatically
+        onSuccess?.()
+      } else {
+        const errorMessage = getUserFriendlyMessage(err)
+        setError(errorMessage)
+        onError?.(errorMessage)
+      }
     }
   }
 
@@ -38,7 +48,7 @@ export default function LoginForm({ onSuccess, onError, className = '' }: LoginF
         </div>
       )}
 
-      <form className="space-y-4" action={handleSubmit}>
+      <form className="space-y-4" onSubmit={handleSubmit}>
         <div className="space-y-4">
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700">

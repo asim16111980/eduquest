@@ -21,7 +21,7 @@ try {
 # Test 2: Check if login page is accessible
 Write-Host "`n2. Testing access to login page..." -ForegroundColor Yellow
 try {
-    $response = Invoke-WebRequest -Uri "http://localhost:3000/auth/login" -UseBasicParsing
+    $response = Invoke-WebRequest -Uri "http://localhost:3000/login" -UseBasicParsing
     if ($response.StatusCode -eq 200) {
         Write-Host "✓ Login page is accessible" -ForegroundColor Green
         # Check for form elements
@@ -57,7 +57,7 @@ try {
 # Test 4: Check if login form validation works
 Write-Host "`n4. Testing login form validation..." -ForegroundColor Yellow
 Write-Host "   (Manual check required:)" -ForegroundColor Yellow
-Write-Host "   - Open http://localhost:3000/auth/login in browser" -ForegroundColor Yellow
+Write-Host "   - Open http://localhost:3000/login in browser" -ForegroundColor Yellow
 Write-Host "   - Try submitting with empty fields" -ForegroundColor Yellow
 Write-Host "   - Try submitting with invalid email format" -ForegroundColor Yellow
 Write-Host "   - Check for appropriate error messages" -ForegroundColor Yellow

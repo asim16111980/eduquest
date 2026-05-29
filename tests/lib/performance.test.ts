@@ -124,16 +124,16 @@ describe('PerformanceMonitor', () => {
     })
 
     it('should log slow operations', () => {
-      // Set low threshold for test
+      // Test with an operation that has a threshold
       performanceMonitor.recordMetric({
-        operation: 'slow',
+        operation: 'authentication',
         duration: 300, // Above default threshold of 200
         timestamp: new Date(),
-        success: true
+        success: false
       })
 
       expect(console.warn).toHaveBeenCalledWith(
-        expect.stringContaining('Slow slow:')
+        expect.stringContaining('Slow authentication: 300ms')
       )
     })
   })

@@ -6,6 +6,7 @@ export interface SecurityConfig {
         scriptSrc: string[]
         styleSrc: string[]
         imgSrc: string[]
+        mediaSrc: string[]
         connectSrc: string[]
       }
     }
@@ -28,7 +29,8 @@ export const defaultSecurityConfig: SecurityConfig = {
         scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
         imgSrc: ["'self'", "data:", "https:"],
-        connectSrc: ["'self'", ...(process.env.SUPABASE_URL ? [process.env.SUPABASE_URL] : [])]
+            connectSrc: ["'self'", ...(process.env.SUPABASE_URL ? [process.env.SUPABASE_URL] : [])],
+      mediaSrc: ["'self'", "data:"]
       }
     }
   },
@@ -71,5 +73,5 @@ export const SecurityHeaders = {
   'X-Frame-Options': 'DENY',
   'X-XSS-Protection': '1; mode=block',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
-  'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self'"
+  'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; media-src 'self' data:; connect-src 'self'"
 }
