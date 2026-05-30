@@ -51,9 +51,9 @@ function DashboardOverviewContent() {
                 </div>
               </div>
             </div>
-          </SectionErrorBoundary>
+          </DashboardSectionBoundary>
         </div>
-      </SectionErrorBoundary>
+      </DashboardSectionBoundary>
     </div>
   );
 }
