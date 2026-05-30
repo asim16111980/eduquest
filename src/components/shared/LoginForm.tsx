@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { signIn } from '@/app/(auth)/login/actions'
 import { getUserFriendlyMessage } from '@/lib/errors'
-import { NextResponse } from 'next/server'
 
 interface LoginFormProps {
   onSuccess?: () => void
@@ -11,44 +10,64 @@ interface LoginFormProps {
   className?: string
 }
 
- export default function LoginForm({ onSuccess, onError, className = '' }: LoginFormProps) {
+export default function LoginForm({ onSuccess, onError, className = '' }: LoginFormProps) {
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
+  const handleSubmit = async (formData: FormData) => {
     setIsSubmitting(true)
     setError(null)
 
-    const formData = new FormData(e.currentTarget)
-    
     try {
-      await signIn(formData, undefined)
-      // If we get here without exception, redirect happened - success
+      await signIn(formData)
       onSuccess?.()
-    } catch (err: any) {
-      setIsSubmitting(false)
-      // Next.js redirect throws a special error with digest starting with 'NEXT_REDIRECT'
-      if (err?.digest?.startsWith('NEXT_REDIRECT')) {
-        // This is actually a success - redirect will happen automatically
-        onSuccess?.()
+    } catch (err) {
+      // Check if this is an authentication error
+      if (err && typeof err === 'object' && 'message' in err) {
+        const error = err as { message: string }
+        // Normalize message to lowercase for structured checks
+        const normalizedMessage = error.message.toLowerCase()
+
+        // Check for auth errors using structured error codes
+        if (normalizedMessage.includes('invalid login credentials') ||
+            normalizedMessage.includes('email not confirmed') ||
+            normalizedMessage.includes('account locked') ||
+            normalizedMessage.includes('disabled') ||
+            normalizedMessage.includes('invalid token') ||
+            normalizedMessage.includes('rate limit')) {
+          // Use original auth error message
+          setError(error.message)
+          onError?.(error.message)
+        } else {
+          // Use user-friendly message for non-auth errors
+          const errorMessage = getUserFriendlyMessage(err)
+          setError(errorMessage)
+          onError?.(errorMessage)
+        }
       } else {
+        // Fallback to user-friendly message
         const errorMessage = getUserFriendlyMessage(err)
         setError(errorMessage)
         onError?.(errorMessage)
       }
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
   return (
     <div className={`space-y-6 ${className}`}>
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-md p-4">
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="bg-red-50 border border-red-200 rounded-md p-4"
+        >
           <p className="text-sm text-red-600">{error}</p>
         </div>
       )}
 
-      <form className="space-y-4" onSubmit={handleSubmit}>
+      <form className="space-y-4" action={handleSubmit}>
         <div className="space-y-4">
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700">

@@ -6,16 +6,14 @@ Write-Host "=== Testing Authentication Flow ===" -ForegroundColor Green
 # Test 1: Check if login page loads without authentication
 Write-Host "`n1. Testing access to dashboard without authentication..." -ForegroundColor Yellow
 try {
-    $response = Invoke-WebRequest -Uri "http://localhost:3000/dashboard" -UseBasicParsing -ErrorAction Stop
-    if ($response.StatusCode -eq 302) {
+    $response = Invoke-WebRequest -Uri "http://localhost:3000/dashboard" -UseBasicParsing -ErrorAction Stop -MaximumRedirection 0
+    Write-Host "✗ Expected redirect but got response: $($response.StatusCode)" -ForegroundColor Red
+} catch {
+    if ($_.Exception.Response.StatusCode -eq 302) {
         Write-Host "✓ Dashboard correctly redirects to login page" -ForegroundColor Green
     } else {
-        Write-Host "✗ Unexpected response from dashboard" -ForegroundColor Red
+        Write-Host "✗ Unexpected error: $($_.Exception.Message)" -ForegroundColor Red
     }
-} catch {
-    Write-Host "✗ Failed to connect to localhost:3000. Make sure the dev server is running." -ForegroundColor Red
-    Write-Host "  Run 'npm run dev' in another terminal before running this test." -ForegroundColor Yellow
-    exit 1
 }
 
 # Test 2: Check if login page is accessible
@@ -44,14 +42,15 @@ try {
 # Test 3: Check if API routes are protected
 Write-Host "`n3. Testing API route protection..." -ForegroundColor Yellow
 try {
-    $response = Invoke-WebRequest -Uri "http://localhost:3000/api/test" -UseBasicParsing
-    if ($response.StatusCode -eq 401) {
+    $response = Invoke-WebRequest -Uri "http://localhost:3000/api/test" -UseBasicParsing -ErrorAction Stop -MaximumRedirection 0
+    # Should not get here - 401 should throw
+    Write-Host "✗ Expected 401 but got response: $($response.StatusCode)" -ForegroundColor Red
+} catch {
+    if ($_.Exception.Response.StatusCode -eq 401) {
         Write-Host "✓ API route correctly returns 401 when not authenticated" -ForegroundColor Green
     } else {
-        Write-Host "✗ API route returned status code: $($response.StatusCode)" -ForegroundColor Red
+        Write-Host "✗ Unexpected error: $($_.Exception.Message)" -ForegroundColor Red
     }
-} catch {
-    Write-Host "✗ Failed to test API route protection" -ForegroundColor Red
 }
 
 # Test 4: Check if login form validation works

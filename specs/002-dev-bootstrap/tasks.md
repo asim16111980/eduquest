@@ -142,7 +142,6 @@ description: "Task list for Development Bootstrap for EduQuest Admin Dashboard"
 - [x] T054 [US4] Verify no `any` types exist in codebase
 - [x] T055 [US4] Test TypeScript compilation with strict mode
 - [x] T056 [US4] Verify autocompletion works for all defined types
-
 **Status**: Phase 6 complete and committed to branch `002-dev-bootstrap`
 **Checkpoint**: User Story 4 completed - all domain types defined, type checking passes with strict mode
 
@@ -169,7 +168,7 @@ description: "Task list for Development Bootstrap for EduQuest Admin Dashboard"
 - [x] T059 [P] [US5] Configure Railway deployment for main branch
 - [x] T060 [US5] Set up environment variables in Railway dashboard
 - [x] T061 [US5] Configure Railway deployment pipeline with proper build settings
-- [x] T062 [US5] Set up Railway health checks and monitoring
+- [ ] T062 [US5] Set up Railway health checks and monitoring
 - [x] T063 [US5] Implement deployment rollback strategy
 - [x] T064 [US5] Test CI pipeline runs on pull request to main
 - [x] T065 [US5] Verify all checks pass: lint, type check, build
@@ -177,13 +176,13 @@ description: "Task list for Development Bootstrap for EduQuest Admin Dashboard"
 - [x] T067 [US5] Verify Railway deployment completes within 5 minutes
 - [x] T068 [P] Update documentation with setup guide in docs/
 - [x] T069 [P] Run quickstart.md verification script
-- [x] T070 [P] Optimize bundle size with @next/bundle-analyzer
-- [x] T071 [P] Add error boundaries around dashboard sections (Constitution requirement)
-- [x] T072 [P] Implement performance monitoring for 100 concurrent users
-- [x] T073 [P] Add unit tests for critical components (if requested)
-- [x] T074 [P] Add structured logging utility (Constitution requirement)
-- [x] T075 Security hardening and audit
-- [x] T076 Final performance optimization and LCP target validation
+- [ ] T070 [P] Optimize bundle size with @next/bundle-analyzer
+- [ ] T071 [P] Add error boundaries around dashboard sections (Constitution requirement)
+- [ ] T072 [P] Implement performance monitoring for 100 concurrent users
+- [ ] T073 [P] Add unit tests for critical components (if requested)
+- [ ] T074 [P] Add structured logging utility (Constitution requirement)
+- [ ] T075 Security hardening and audit
+- [ ] T076 Final performance optimization and LCP target validation
 
 ---
 

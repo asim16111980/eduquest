@@ -5,8 +5,7 @@ import { createServerClient } from '@supabase/ssr'
 import { createClient } from '@/lib/supabase/server'
 import { log } from './lib/logger'
 import { startAuthTimer } from './lib/performance'
-import { hasRole } from '@/lib/types/roles'
-import { UserRole } from '@/lib/types/user'
+import { hasRole, UserRole } from '@/lib/types/database'
 
 interface CookieEntry {
   name: string
@@ -16,6 +15,9 @@ interface CookieEntry {
 
 export async function middleware(request: NextRequest) {
   const startTime = Date.now()
+
+  // Client IP for logging (defined early to be available throughout)
+  const clientIP = request.headers.get('x-forwarded-for') || 'unknown'
 
   // Log request with security context
   log.info('Request received', {
@@ -34,7 +36,8 @@ export async function middleware(request: NextRequest) {
     response.headers.set(key, value)
   })
 
-  // Rate limiting (simple implementation)
+  // Rate limiting (simple implementation) - TEMPORARILY DISABLED
+  /*
   const clientIP = request.headers.get('x-forwarded-for') || 'unknown'
   const rateLimitKey = `rate-limit:${clientIP}`
   const now = Date.now()
@@ -43,8 +46,8 @@ export async function middleware(request: NextRequest) {
 
   // In a real implementation, you would use Redis or similar for rate limiting
   // This is a simple in-memory implementation for demonstration
-  const globalAny = global as any
-  const requests = (globalAny.rateLimitStore || (globalAny.rateLimitStore = {}))[rateLimitKey] || []
+  const globalAny = global as Record<string, unknown>
+  const requests = ((globalAny.rateLimitStore as Record<string, number[]>) || (globalAny.rateLimitStore = {}))[rateLimitKey] || []
   const recentRequests = requests.filter((time: number) => now - time < windowMs)
 
   if (recentRequests.length >= maxRequests) {
@@ -65,7 +68,8 @@ export async function middleware(request: NextRequest) {
 
   // Add current request to rate limit store
   recentRequests.push(now)
-  (globalAny.rateLimitStore || (globalAny.rateLimitStore = {}))[rateLimitKey] = recentRequests
+  (globalAny.rateLimitStore as Record<string, number[]>)[rateLimitKey] = recentRequests
+  */
 
   // Initialize Supabase client for auth
   let supabaseResponse = response

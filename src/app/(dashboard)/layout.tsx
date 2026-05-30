@@ -1,68 +1,18 @@
-'use client'
-
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 import { signOut } from '@/app/(auth)/login/actions'
 
-interface User {
-  id: string
-  email: string
-  name: string
-  role: string
-}
-
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
 
-  useEffect(() => {
-    // Get user from cookie or localStorage for demo
-    const getUser = () => {
-      try {
-        const mockUserCookie = document.cookie
-          .split('; ')
-          .find(row => row.startsWith('mock-user='))
-        if (mockUserCookie) {
-          const userData = decodeURIComponent(mockUserCookie.split('=')[1])
-          return JSON.parse(userData)
-        }
-
-        // Fallback for development
-        if (process.env.NODE_ENV === 'development') {
-          return {
-            id: '1',
-            email: 'admin@eduquest.com',
-            name: 'Admin User',
-            role: 'super_admin'
-          }
-        }
-      } catch (error) {
-        console.error('Error getting user:', error)
-      }
-      return null
-    }
-
-    setUser(getUser())
-    setIsLoading(false)
-  }, [])
-
-  const handleSignOut = async () => {
-    await signOut()
-  }
-
-  const getRoleDisplayName = (role: string) => {
-    const roleMap: Record<string, string> = {
-      super_admin: 'Super Admin',
-      content_manager: 'Content Manager',
-      teacher: 'Teacher',
-      viewer: 'Viewer',
-      student: 'Student'
-    }
-    return roleMap[role] || role
+  if (!user) {
+    redirect('/auth/login')
   }
 
   return (
@@ -103,26 +53,20 @@ export default function DashboardLayout({
               </nav>
             </div>
             <div className="flex items-center space-x-4">
-              {isLoading ? (
-                <span className="text-sm text-gray-500">Loading...</span>
-              ) : user ? (
-                <>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm text-gray-700">{user.name}</span>
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      {getRoleDisplayName(user.role)}
-                    </span>
-                  </div>
-                  <button
-                    onClick={handleSignOut}
-                    className="text-sm text-gray-500 hover:text-gray-700 px-3 py-1 rounded-md hover:bg-gray-100"
-                  >
-                    Sign Out
-                  </button>
-                </>
-              ) : (
-                <span className="text-sm text-gray-500">Not authenticated</span>
-              )}
+              <span className="text-sm text-gray-700">
+                {user.email || 'User'}
+              </span>
+              <form action={async () => {
+                'use server'
+                await signOut()
+              }}>
+                <button
+                  type="submit"
+                  className="text-sm text-gray-600 hover:text-gray-900"
+                >
+                  Sign out
+                </button>
+              </form>
             </div>
           </div>
         </div>

@@ -17,23 +17,23 @@ export const AUTH_ERROR_MESSAGES = {
 
 export function getAuthErrorMessage(error: unknown): string {
   // Handle Supabase auth errors
-  if (error && typeof error === 'object' && 'message' in error) {
-    const message = (error as { message: string }).message
+  if (isAuthError(error)) {
+    const message = error.message.toLowerCase()
 
-    // Map common Supabase auth error messages
-    if (message.includes('Invalid login credentials')) {
+    // Map common Supabase auth error messages (case-insensitive)
+    if (message.includes('invalid login credentials')) {
       return AUTH_ERROR_MESSAGES.INVALID_CREDENTIALS
     }
-    if (message.includes('Email not confirmed')) {
+    if (message.includes('email not confirmed')) {
       return AUTH_ERROR_MESSAGES.EMAIL_NOT_VERIFIED
     }
-    if (message.includes('Account locked')) {
+    if (message.includes('account locked')) {
       return AUTH_ERROR_MESSAGES.ACCOUNT_LOCKED
     }
     if (message.includes('disabled')) {
       return AUTH_ERROR_MESSAGES.ACCOUNT_DISABLED
     }
-    if (message.includes('Invalid token')) {
+    if (message.includes('invalid token')) {
       return AUTH_ERROR_MESSAGES.INVALID_TOKEN
     }
     if (message.includes('rate limit')) {
@@ -46,13 +46,15 @@ export function getAuthErrorMessage(error: unknown): string {
 }
 
 export function isAuthError(error: unknown): error is { message: string } {
-  return typeof error === 'object' && error !== null && 'message' in error
+  if (typeof error !== 'object' || error === null) return false
+  if (!('message' in error)) return false
+  return typeof (error as { message: unknown }).message === 'string'
 }
 
 export function shouldRetryAuth(error: unknown): boolean {
   if (!isAuthError(error)) return false
 
-  const message = error.message
+  const message = error.message.toLowerCase()
 
   // Retryable errors
   return message.includes('network') ||

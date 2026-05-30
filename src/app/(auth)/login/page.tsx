@@ -28,8 +28,8 @@ export default function LoginPage() {
 
     // Check if we're in development mode (either mock auth enabled or no Supabase config)
     const useMockAuth = process.env.USE_MOCK_AUTH === 'true'
-    const hasValidSupabaseConfig = 
-      process.env.SUPABASE_URL && 
+    const hasValidSupabaseConfig =
+      process.env.SUPABASE_URL &&
       process.env.SUPABASE_ANON_KEY &&
       !process.env.SUPABASE_URL.includes('EXAMPLE') &&
       !process.env.SUPABASE_URL.includes('your_project_ref') &&
@@ -72,6 +72,17 @@ export default function LoginPage() {
             </div>
           )}
         </div>
+
+        {/* Error display with aria-live for screen readers */}
+        {error && (
+          <div
+            role="alert"
+            aria-live="assertive"
+            className="bg-red-50 border border-red-200 rounded-md p-4"
+          >
+            <p className="text-sm text-red-600">{error}</p>
+          </div>
+        )}
 
         <LoginForm
           onSuccess={handleSuccess}

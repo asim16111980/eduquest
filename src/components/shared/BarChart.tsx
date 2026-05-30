@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 
 interface BarChartProps {
-  data: any[];
+  data: Array<Record<string, unknown>>;
   xKey: string;
   yKey: string;
 }
