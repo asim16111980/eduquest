@@ -98,9 +98,15 @@ jobs:
 
   security:
     runs-on: ubuntu-latest
-
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'javascript' ]
     steps:
     - uses: actions/checkout@v4
+
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -117,7 +123,10 @@ jobs:
     - name: Run custom security audit
       run: node scripts/security-audit.js
 
-    - name: Run CodeQL analysis
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Init CodeQL
       uses: github/codeql-action/init@v3
       with:
         languages: ${{ matrix.language }}
@@ -126,6 +135,7 @@ jobs:
       uses: github/codeql-action/perform-analysis@v3
       with:
         category: security
+        autobuild: true
 
   deploy:
     runs-on: ubuntu-latest
