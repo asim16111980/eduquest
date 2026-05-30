@@ -1,18 +1,21 @@
-import { DashboardSectionBoundary } from '@/components/shared/ErrorBoundary'
+'use client';
 
-export default function DashboardOverview() {
+import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
+import { SectionErrorBoundary } from '@/components/shared/SectionErrorBoundary';
+
+function DashboardOverviewContent() {
   return (
     <div className="px-4 py-6 sm:px-0">
-      <DashboardSectionBoundary title="Dashboard Overview" id="dashboard-overview">
+      <SectionErrorBoundary title="Dashboard Overview">
         <div className="border-4 border-dashed border-gray-200 rounded-lg p-6">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Dashboard Overview</h2>
+          <h2 className="text-lg leading-6 font-medium text-gray-900 mb-4">Dashboard Overview</h2>
           <p className="text-sm text-gray-600 mb-6">
             Welcome to the EduQuest Admin Dashboard. This is where you&apos;ll manage users,
             view analytics, and configure platform settings.
           </p>
 
-          <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            <DashboardSectionBoundary title="Users Section" id="users-section">
+          <SectionErrorBoundary title="Quick Actions">
+            <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
               <div className="bg-white overflow-hidden shadow rounded-lg">
                 <div className="px-4 py-5 sm:p-6">
                   <h3 className="text-lg leading-6 font-medium text-gray-900">Users</h3>
@@ -24,9 +27,7 @@ export default function DashboardOverview() {
                   </div>
                 </div>
               </div>
-            </DashboardSectionBoundary>
 
-            <DashboardSectionBoundary title="Analytics Section" id="analytics-section">
               <div className="bg-white overflow-hidden shadow rounded-lg">
                 <div className="px-4 py-5 sm:p-6">
                   <h3 className="text-lg leading-6 font-medium text-gray-900">Analytics</h3>
@@ -38,9 +39,7 @@ export default function DashboardOverview() {
                   </div>
                 </div>
               </div>
-            </DashboardSectionBoundary>
 
-            <DashboardSectionBoundary title="Settings Section" id="settings-section">
               <div className="bg-white overflow-hidden shadow rounded-lg">
                 <div className="px-4 py-5 sm:p-6">
                   <h3 className="text-lg leading-6 font-medium text-gray-900">Settings</h3>
@@ -52,10 +51,18 @@ export default function DashboardOverview() {
                   </div>
                 </div>
               </div>
-            </DashboardSectionBoundary>
-          </div>
+            </div>
+          </SectionErrorBoundary>
         </div>
-      </DashboardSectionBoundary>
+      </SectionErrorBoundary>
     </div>
+  );
+}
+
+export default function DashboardOverview() {
+  return (
+    <ErrorBoundary>
+      <DashboardOverviewContent />
+    </ErrorBoundary>
   );
 }

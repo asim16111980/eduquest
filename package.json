@@ -8,6 +8,9 @@
     "start": "next start",
     "lint": "next lint",
     "analyze": "cross-env ANALYZE=true npm run build",
+    "build:analyze": "set ANALYZE=true && next build",
+    "load-test": "tsx scripts/testing/load-test.ts 60 100 http://localhost:3000/api/health",
+    "load-test:custom": "tsx scripts/testing/load-test.ts",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
@@ -21,10 +24,11 @@
     "@supabase/supabase-js": "^2.39.0",
     "next": "15.0.0",
     "react": "^18",
-    "react-dom": "^18"
+    "react-dom": "^18",
+    "supabase": "^2.101.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.29.7",
+"@babel/core": "^7.29.7",
     "@babel/preset-env": "^7.29.7",
     "@babel/preset-react": "^7.29.7",
     "@next/bundle-analyzer": "^16.2.6",
@@ -39,6 +43,7 @@
     "cross-env": "^10.1.0",
     "eslint": "^8",
     "eslint-config-next": "15.0.0",
+    "glob": "^13.0.6",
     "jest": "^30.4.2",
     "jest-environment-jsdom": "^30.4.1",
     "postcss": "^8",
@@ -46,6 +51,7 @@
     "tailwindcss": "^3.4.0",
     "tailwindcss-animate": "^1.0.7",
     "ts-jest": "^29.4.11",
+    "tsx": "^4.22.3",
     "typescript": "^5"
   }
 }

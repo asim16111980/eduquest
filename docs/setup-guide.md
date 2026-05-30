@@ -6,8 +6,10 @@ This guide provides step-by-step instructions for setting up the EduQuest Admin 
 
 ### System Requirements
 - Node.js 20 or higher
-- npm or yarn
+- npm or yarn package manager
 - Git
+- Railway account (for production deployment)
+- Supabase account (for database)
 - Supabase CLI (for database setup)
 
 ### Accounts Needed
@@ -40,7 +42,61 @@ cp .env.local.example .env.local
 npm run dev
 ```
 
-Visit http://localhost:3000
+Visit `http://localhost:3000` to see the application.
+
+## Environment Variables
+
+Create a `.env.local` file in the root directory with the following variables:
+
+```env
+# Supabase Configuration
+SUPABASE_URL=your-supabase-url
+SUPABASE_ANON_KEY=your-supabase-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+
+# Optional: Railway Deployment
+RAILWAY_PROJECT_REF=your-railway-project-ref
+```
+
+## Development Workflow
+
+### 1. Running the Development Server
+
+This starts the Next.js development server with hot reload enabled.
+
+### 2. Building for Production
+
+```bash
+npm run build
+```
+
+This creates an optimized production build in the `.next` directory.
+
+### 3. Running Tests
+
+```bash
+# Run all tests
+npm test
+
+# Run tests with coverage
+npm run test:coverage
+
+# Run E2E tests
+npm run test:e2e
+```
+
+### 4. Code Quality Checks
+
+```bash
+# Lint code
+npm run lint
+
+# Type check
+npm run type-check
+
+# Check both
+npm run check
+```
 
 ## Detailed Setup
 
@@ -134,21 +190,91 @@ The CI pipeline includes:
 node scripts/deployment/test-deployment.js
 ```
 
-## Development Workflow
+## Deployment
+
+### Railway Deployment
+
+1. **Install Railway CLI**
+   ```bash
+   npm install -g @railway/cli
+   ```
+
+2. **Login to Railway**
+   ```bash
+   railway login
+   ```
+
+3. **Link your project**
+   ```bash
+   railway link
+   ```
+
+4. **Deploy**
+   ```bash
+   railway up
+   ```
+
+The Railway configuration (`railway.toml`) is already set up with:
+- Build command: `npm run build`
+- Start command: `npm start`
+- Health checks at `/api/health`
+- Environment variables configured
+
+### GitHub Actions CI/CD
+
+The project includes a CI/CD pipeline that runs on:
+- Push to main branch
+- Pull requests to main
+
+The pipeline includes:
+- ESLint checks
+- TypeScript type checking
+- Build verification
+- Security audits
+- E2E tests
+
+## Project Structure
+
+```
+eduquest/
+├── src/
+│   ├── app/                    # Next.js App Router
+│   │   ├── api/               # API routes
+│   │   ├── (auth)/            # Authentication pages
+│   │   └── (dashboard)/       # Dashboard pages
+│   ├── components/            # React components
+│   │   ├── shared/            # Shared components
+│   │   └── charts/            # Chart components
+│   ├── lib/                   # Utility libraries
+│   │   ├── supabase/          # Supabase client helpers
+│   │   ├── types/             # TypeScript types
+│   │   └── auth/              # Authentication utilities
+│   └── styles/                # Global styles
+├── tests/                     # Test files
+├── scripts/                   # Utility scripts
+├── docs/                      # Documentation
+└── .github/                   # GitHub workflows
+```
+
+## Common Commands
 
 ### Daily Development
 ```bash
-# Start development server
-npm run dev
+# Development
+npm run dev          # Start dev server
+npm run build        # Build for production
+npm run start        # Start production server
+npm run lint         # Run ESLint
+npm run type-check   # Run TypeScript check
 
-# Run linting
-npm run lint
+# Testing
+npm test             # Run tests
+npm run test:watch   # Run tests in watch mode
+npm run test:e2e     # Run E2E tests
 
-# Type check
-npx tsc --noEmit
-
-# Build for production
-npm run build
+# Deployment
+npm run deploy        # Deploy to Railway
+npm run deploy:staging # Deploy to staging
 ```
 
 ### Testing
@@ -282,6 +408,66 @@ supabase db reset
 2. **Troubleshooting Guide**: `docs/troubleshooting.md`
 3. **Issue Tracker**: GitHub Issues
 4. **Community**: EduQuest Discord/Slack
+
+### Build Issues
+
+If you encounter build errors:
+
+1. Check Node.js version (must be 20+)
+2. Clear node_modules and reinstall:
+   ```bash
+   rm -rf node_modules package-lock.json
+   npm install
+   ```
+
+### Supabase Connection Issues
+
+1. Verify your environment variables are set correctly
+2. Check your Supabase project status
+3. Run the health check endpoint:
+   ```bash
+   curl http://localhost:3000/api/health
+   ```
+
+### Railway Deployment Issues
+
+1. Check Railway logs:
+   ```bash
+   railway logs
+   ```
+
+2. Verify environment variables are set in Railway dashboard
+
+## Contributing
+
+1. Create a new branch from `main`
+2. Make your changes
+3. Run tests and lint checks
+4. Submit a pull request
+
+The CI/CD pipeline will automatically run tests and checks on your PR.
+
+## Monitoring
+
+The application includes monitoring endpoints:
+
+- `/api/health` - Health check endpoint
+- `/api/metrics` - Application metrics
+- `/api/performance` - Performance metrics
+
+These are used by Railway for monitoring and can be accessed through the Railway dashboard.
+
+## Security
+
+The application includes several security measures:
+
+- Input validation
+- SQL injection protection via Supabase RLS
+- JWT authentication
+- Rate limiting (planned)
+- Security headers (planned)
+
+For more information, see the [Security Policy](./security.md).
 
 ## Next Steps
 

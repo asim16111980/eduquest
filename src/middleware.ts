@@ -34,6 +34,39 @@ export async function middleware(request: NextRequest) {
     response.headers.set(key, value)
   })
 
+  // Rate limiting (simple implementation)
+  const clientIP = request.headers.get('x-forwarded-for') || 'unknown'
+  const rateLimitKey = `rate-limit:${clientIP}`
+  const now = Date.now()
+  const windowMs = 15 * 60 * 1000 // 15 minutes
+  const maxRequests = 100 // 100 requests per 15 minutes
+
+  // In a real implementation, you would use Redis or similar for rate limiting
+  // This is a simple in-memory implementation for demonstration
+  const globalAny = global as any
+  const requests = (globalAny.rateLimitStore || (globalAny.rateLimitStore = {}))[rateLimitKey] || []
+  const recentRequests = requests.filter((time: number) => now - time < windowMs)
+
+  if (recentRequests.length >= maxRequests) {
+    log.warn('Rate limit exceeded', { ip: clientIP, requests: recentRequests.length })
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': maxRequests.toString(),
+          'X-RateLimit-Remaining': '0',
+          'X-RateLimit-Reset': new Date(now + windowMs).toISOString(),
+          'Retry-After': Math.ceil(windowMs / 1000).toString()
+        }
+      }
+    )
+  }
+
+  // Add current request to rate limit store
+  recentRequests.push(now)
+  (globalAny.rateLimitStore || (globalAny.rateLimitStore = {}))[rateLimitKey] = recentRequests
+
   // Initialize Supabase client for auth
   let supabaseResponse = response
   const supabase = createServerClient(
@@ -98,7 +131,7 @@ export async function middleware(request: NextRequest) {
 
    // Check if in development mode with mock auth
    const useMockAuth = process.env.USE_MOCK_AUTH === 'true'
-   
+
    // Define role-based route access
    const publicRoutes = ['/login', '/api/auth']
    const dashboardRoutes = ['/dashboard', '/dashboard/*']
@@ -165,6 +198,14 @@ export async function middleware(request: NextRequest) {
   // Add timing header for monitoring
   response.headers.set('X-Response-Time', `${Date.now() - startTime}ms`)
 
+  // Log the request
+  log.info('Middleware processed request', {
+    path: request.nextUrl.pathname,
+    method: request.method,
+    ip: clientIP,
+    duration: Date.now() - startTime
+  })
+
   // IMPORTANT: You *must* return the supabaseResponse object as it is. If you're
   // creating a new object with NextResponse.next() make sure to:
   // 1. Pass the request in it, like so:
@@ -185,12 +226,11 @@ export const config = {
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
+     * - api (API routes)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * - api/health (health check endpoint)
-     * Feel free to modify this pattern to include more paths.
      */
-    '/((?!_next/static|_next/image|favicon.ico|api/health).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
 }
