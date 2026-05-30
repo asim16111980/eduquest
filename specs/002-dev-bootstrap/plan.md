@@ -1,11 +1,11 @@
 # Implementation Plan: Development Bootstrap for EduQuest Admin Dashboard
 
-**Feature Branch**: `002-dev-bootstrap`  
-**Created**: 2026-05-18  
-**Status**: Planning  
-**Based on**: `specs/002-dev-bootstrap/spec.md`
+**Branch**: `002-dev-bootstrap` | **Date**: 2026-05-30 | **Spec**: [spec.md](./spec.md)
+**Input**: Feature specification from `/specs/002-dev-bootstrap/spec.md`
 
----
+## Summary
+
+This feature bootstraps the EduQuest Admin Dashboard development environment. It establishes the foundational Next.js 15 project structure, configures Supabase integration with server/browser/middleware clients, implements authentication with PKCE flow, defines comprehensive TypeScript types for database entities, and sets up CI/CD pipeline for Railway deployment. The development focuses on User Stories 1-5 with emphasis on type safety and security.
 
 ## Technical Context
 
@@ -26,21 +26,6 @@
 - `tailwindcss` - Styling
 - `@next/bundle-analyzer` - Bundle size optimization
 
-### External Integrations
-- Supabase services (database, auth, realtime)
-- Railway deployment platform
-- GitHub repository (for CI/CD)
-
-### Known Constraints
-- Must use exact stack specified in Constitution §2: Next.js 15, TypeScript strict, Tailwind v4
-- All schema changes through migrations
-- No `any` types in TypeScript
-- No inline styles - Tailwind utility classes only
-- Performance targets: LCP < 2.5s, 100 concurrent users
-- Error handling: user-friendly messages with structured technical logging
-- Realtime usage limited to leaderboard widgets, active-user counter, live event feed
-- All exports respect current filter state and are streamed server-side
-
 ### Constitution Check
 
 | Principle | Status | Notes |
@@ -55,268 +40,68 @@
 
 **Constitution Compliance**: All applicable principles satisfied. No violations.
 
----
+## Project Structure
 
-## Phase 0: Research & Dependencies
+### Documentation (this feature)
 
-### Research Tasks
-
-#### Task R-001: Next.js 15 Best Practices
-**Objective**: Research Next.js 15 App Router patterns for admin dashboards
-- Study server component patterns for data fetching
-- Research middleware implementation for auth
-- Analyze optimal TypeScript configuration
-- Document performance optimization techniques
-
-#### Task R-002: Supabase Integration Patterns
-**Objective**: Research Supabase client implementations for Next.js
-- Best practices for server vs client client configuration
-- PKCE flow implementation details
-- Session management with Supabase Auth
-- Error handling for connection failures
-
-#### Task R-003: Railway Deployment Configuration
-**Objective**: Research Railway deployment for Next.js apps
-- Environment variable setup
-- Build configuration optimization
-- Auto-deployment triggers
-- Performance monitoring setup
-
-#### Task R-004: TypeScript Strict Mode Implementation
-**Objective**: Research TypeScript strict mode best practices
-- Type generation from Supabase schema
-- Domain type patterns
-- Avoiding `any` types
-- Path alias configuration
-
-#### Task R-005: CI/CD Pipeline Patterns
-**Objective**: Research GitHub Actions for Next.js projects
-- Optimal workflow steps order
-- Caching strategies for dependencies
-- Build and test matrix
-- Security scanning integration
-
-### Research Consolidation
-
-**Decision**: Use official Supabase Auth helpers with Next.js
-**Rationale**: Maintains compatibility with Supabase services while providing proper TypeScript support
-**Alternatives considered**: Custom auth implementation, third-party auth libraries
-
-**Decision**: Railway auto-deployment with native Next.js buildpack
-**Rationale**: Simplifies deployment process, leverages Railway's optimized Next.js support
-**Alternatives considered**: Docker deployment, custom build scripts
-
-**Decision**: GitHub Actions CI with caching
-**Rationale**: Reduces build times while maintaining comprehensive checks
-**Alternatives considered**: CircleCI, Travis CI, no CI (not acceptable)
-
-**Decision**: TypeScript strict mode with path aliases
-**Rationale**: Improves developer experience with better autocomplete and type safety
-**Alternatives considered**: Loose TypeScript, no path aliases
-
----
-
-## Phase 1: Data Model & Contracts
-
-### Data Model (`data-model.md`)
-
-#### Core Entities
-
-1. **User Profile**
-   - `id` UUID (PK) - linked to auth.users
-   - `auth_user_id` UUID - FK to auth.users
-   - `role` ENUM - super_admin, content_manager, teacher, viewer, student
-   - `display_name` TEXT
-   - `avatar_url` TEXT (nullable)
-   - `grade_level` TEXT (nullable)
-   - `is_active` BOOLEAN
-   - `created_at` TIMESTAMPTZ
-   - `updated_at` TIMESTAMPTZ
-   - `deleted_at` TIMESTAMPTZ (nullable)
-
-2. **User Session**
-   - JWT token with role claims
-   - Expiration timestamp
-   - Refresh token (handled by Supabase)
-
-3. **Environment Configuration**
-   - `SUPABASE_URL` - Database endpoint
-   - `SUPABASE_ANON_KEY` - Public API key
-   - `SUPABASE_SERVICE_ROLE_KEY` - Admin key (server-only)
-   - `NEXTAUTH_URL` - Application URL
-
-4. **Type Definitions**
-   - Database types (generated from Supabase)
-   - Domain types (custom business entities)
-   - API response types
-
-#### Validation Rules
-- Email format validation for login
-- Role-based access control at all levels
-- UUID identifiers for all entities
-- Soft delete pattern for all entities
-
-#### State Transitions
-- User: active → inactive (via admin action)
-- Session: valid → expired (time-based)
-- Environment: configured → missing (error state)
-
-### Interface Contracts
-
-Since this is an internal admin dashboard with no external APIs, no formal interface contracts are needed. All functionality is internal to the application.
-
-### Quickstart (`quickstart.md`)
-
-```markdown
-# EduQuest Admin Dashboard - Development Bootstrap
-
-## Prerequisites
-- Node.js 20+
-- npm
-- Supabase CLI
-- Railway account
-
-## Setup Steps
-
-### 1. Initialize Next.js App
-```bash
-npx create-next-app@latest eduquest-admin --typescript --tailwind --app --src-dir --import-alias "@/*"
-cd eduquest-admin
+```text
+specs/002-dev-bootstrap/
+├── plan.md              # This file (/speckit-plan command output)
+├── research.md          # Phase 0 output
+├── data-model.md        # Phase 1 output
+├── quickstart.md        # Phase 1 output
+├── contracts/           # Phase 1 output (if applicable)
+└── tasks.md             # Phase 2 output (/speckit-tasks command)
 ```
 
-### 2. Install Dependencies
-```bash
-npm install @supabase/supabase-js @supabase/auth-helpers-nextjs
+### Source Code (repository root)
+
+```text
+src/
+├── app/                 # Next.js App Router
+│   ├── (auth)/         # Auth routes (login, register, etc.)
+│   └── (dashboard)/    # Dashboard routes (protected)
+├── components/         # React components
+│   ├── shared/        # Shared reusable components
+│   └── charts/        # Chart components
+├── lib/               # Libraries
+│   ├── supabase/      # Supabase clients
+│   │   ├── server.ts
+│   │   ├── client.ts
+│   │   └── middleware.ts
+│   ├── types/         # TypeScript types (USER STORY 4)
+│   │   ├── database.ts
+│   │   ├── user.ts
+│   │   ├── session.ts
+│   │   └── index.ts
+│   └── queries/       # Database queries
+│       └── test.ts
+└── styles/            # Global styles
+
+tests/                 # Tests (if implemented)
+.env.local            # Environment variables (template provided)
 ```
 
-### 3. Configure Environment
-Create `.env.local`:
-```env
-SUPABASE_URL=your_project_url
-SUPABASE_ANON_KEY=your_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_service_key
-```
+**Structure Decision**: Single-project structure - This is a unified web application with Next.js 15 App Router. Server and client components coexist in the same src directory, with routing sections (auth, dashboard) separated by parentheses in the app directory.
 
-### 4. Setup TypeScript
-Update `tsconfig.json`:
-```json
-{
-  "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["./src/*"]
-    }
-  }
-}
-```
+## Implementation Status
 
-### 5. Configure Supabase Clients
-Create `lib/supabase/` with server, client, and middleware implementations.
+### Completed Features
+- ✅ Project scaffold and dependencies
+- ✅ Supabase client helpers (server, client, middleware)
+- ✅ Authentication middleware with PKCE flow
+- ✅ TypeScript types with strict mode
+- ✅ Security headers and rate limiting
+- ✅ Error boundaries for dashboard sections
+- ✅ Structured logging system
+- ✅ Role-based access control
 
-### 6. Test Development Server
-```bash
-npm run dev
-```
+### In Progress
+- 🔄 CI/CD pipeline configuration
+- 🔄 Railway deployment setup
 
-Visit http://localhost:3000
-
-## Next Steps
-1. Set up authentication middleware
-2. Configure type generation
-3. Set up CI/CD pipeline
-```
-
----
-
-## Phase 2: Implementation Strategy
-
-### Implementation Order
-
-1. **BE-001**: Project scaffold and dependencies
-   - Initialize Next.js 15 app
-   - Install all dependencies
-   - Configure TypeScript path aliases
-   - Set up ESLint + Prettier
-
-2. **BE-002**: Supabase client helpers
-   - Create `createServerClient`
-   - Create `createBrowserClient`
-   - Create `createMiddlewareClient`
-
-3. **BE-003**: Auth middleware
-   - Session validation
-   - Role-based redirects
-   - Request header attachment
-
-4. **BE-004**: TypeScript types
-   - Generate database types
-   - Define domain types
-   - Update type references
-
-5. **BE-005**: GitHub Actions CI
-   - Configure workflow
-   - Set up auto-deployment
-   - Add performance monitoring
-
-6. **BE-006**: Railway Deployment Pipeline
-   - Configure Railway environment variables
-   - Set up auto-deployment triggers
-   - Configure health checks and monitoring
-   - Implement deployment rollback strategy
-
-6. **BE-006**: Error handling
-   - User-friendly messages
-   - Technical logging
-   - Graceful degradation
-
-7. **BE-007**: Performance optimization
-   - Code splitting
-   - Bundle optimization
-   - Caching strategies
-
-### Success Metrics
-
-- Development setup time < 10 minutes
-- Build success rate: 100%
-- TypeScript errors: 0
-- Authentication latency: < 200ms
-- CI pipeline success rate: 100%
-- Railway deployment time: < 5 minutes
-
-### Risk Mitigation
-
-1. **Dependency conflicts**
-   - Use exact versions from package.json
-   - Test all combinations
-
-2. **TypeScript errors**
-   - Strict mode from start
-   - Incremental type adoption
-
-3. **Authentication issues**
-   - Test all role scenarios
-   - Mock Supabase for development
-
-4. **Performance issues**
-   - Monitor bundle size
-   - Profile on deployment
-
----
-
-## Agent Context Update
-
-<!-- SPECKIT START -->
-Plan reference: `specs/002-dev-bootstrap/plan/implementation-plan.md`
-<!-- SPECKIT END -->
-
----
-
-## Generated Artifacts
-
-1. **research.md** - Research findings and decisions
-2. **data-model.md** - Entity definitions and relationships
-3. **quickstart.md** - Setup instructions for developers
-4. **contracts/** - (empty, no external interfaces)
-5. **Implementation Plan** - This document
-
-**Next Steps**: Run `/speckit-tasks` to generate actionable tasks from this plan.
+### Next Steps
+- Complete GitHub Actions CI workflow
+- Configure Railway auto-deployment
+- Add performance monitoring
+- Implement comprehensive testing

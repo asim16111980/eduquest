@@ -27,7 +27,7 @@ export default function LoginForm({ onSuccess, onError, className = '' }: LoginF
         const error = err as { message: string }
         // Normalize message to lowercase for structured checks
         const normalizedMessage = error.message.toLowerCase()
-        
+
         // Check for auth errors using structured error codes
         if (normalizedMessage.includes('invalid login credentials') ||
             normalizedMessage.includes('email not confirmed') ||

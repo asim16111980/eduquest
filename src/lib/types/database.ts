@@ -1,7 +1,7 @@
 // Auto-generated TypeScript types from Supabase schema
 // Generated from data-model.md as fallback when Supabase CLI unavailable
 // Last updated: 2026-05-24T18:11:49.035Z
-// 
+//
 // For production, run: supabase gen types typescript --local > this_file
 // Or: supabase gen types typescript --project-id <project-id> --local
 
@@ -53,45 +53,7 @@ export function hasRole(userRole: UserRole, requiredRole: UserRole): boolean {
   return userIndex !== -1 && userIndex <= requiredIndex
 }
 
-// User Profile - matches user_profiles table
-export interface UserProfile {
-  id: string
-  auth_user_id: string
-  role: UserRole
-  display_name: string
-  avatar_url?: string
-  grade_level?: string
-  is_active: boolean
-  created_at: string
-  updated_at?: string
-  deleted_at?: string
-}
-
-// Extended user profile for authentication context
-export interface AuthUserProfile {
-  id: string
-  email: string
-  first_name?: string
-  last_name?: string
-  role: UserRole
-  avatar_url?: string
-  is_active: boolean
-  email_verified: boolean
-  created_at: string
-  updated_at?: string
-  last_login_at?: string
-}
-
-// User Session - JWT session state
-export interface UserSession {
-  access_token: string
-  refresh_token?: string
-  expires_in: number
-  token_type: string
-  user: AuthUserProfile
-  user_role: UserRole
-  created_at: string
-}
+// Type aliases for convenience - matches database tables
 
 // Session state for React context
 export interface SessionState {
@@ -148,6 +110,45 @@ export interface QueryFilter {
   value: unknown
 }
 
+// Define base types first
+export interface UserProfile {
+  id: string
+  auth_user_id: string
+  role: UserRole
+  display_name: string
+  avatar_url?: string
+  grade_level?: string
+  is_active: boolean
+  created_at: string
+  updated_at?: string
+  deleted_at?: string
+}
+
+export interface UserSession {
+  id: string
+  user_id: string
+  access_token: string
+  refresh_token?: string
+  expires_at: string
+  created_at: string
+  updated_at?: string
+  deleted_at?: string
+}
+
+export interface AuditLog {
+  id: string
+  user_id?: string
+  action: string
+  resource_type: string
+  resource_id: string
+  changes?: Record<string, unknown>
+  ip_address?: string
+  user_agent?: string
+  status: 'success' | 'failed' | 'pending'
+  error_message?: string
+  created_at: string
+}
+
 // Database type matching Supabase generated types structure
 export interface Database {
   public: {
@@ -157,6 +158,16 @@ export interface Database {
         Insert: Omit<UserProfile, 'id' | 'created_at' | 'updated_at' | 'deleted_at'>
         Update: Partial<Omit<UserProfile, 'id' | 'created_at'>>
       }
+      user_sessions: {
+        Row: UserSession
+        Insert: Omit<UserSession, 'id' | 'created_at' | 'updated_at' | 'deleted_at'>
+        Update: Partial<Omit<UserSession, 'id' | 'created_at'>>
+      }
+      audit_logs: {
+        Row: AuditLog
+        Insert: Omit<AuditLog, 'id' | 'created_at'>
+        Update: Partial<Omit<AuditLog, 'id' | 'created_at'>>
+      }
     }
     Functions: {
     }
@@ -164,6 +175,52 @@ export interface Database {
       role_enum: UserRole
     }
   }
+  auth: {
+    Tables: {
+      users: {
+        Row: {
+          id: string
+          email: string
+          email_confirmed_at: string | null
+          phone: string | null
+          phone_confirmed_at: string | null
+          last_sign_in_at: string | null
+          created_at: string
+          updated_at: string
+          role?: UserRole
+        }
+        Insert: {
+          id?: string
+          email: string
+          email_confirmed_at?: string | null
+          phone?: string | null
+          phone_confirmed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          email?: string
+          email_confirmed_at?: string | null
+          phone?: string | null
+          phone_confirmed_at?: string | null
+          last_sign_in_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+    }
+  }
 }
 
+// Type aliases for convenience - references to the defined types
+export type UserProfileInsert = Omit<UserProfile, 'id' | 'created_at' | 'updated_at' | 'deleted_at'>
+export type UserProfileUpdate = Partial<Omit<UserProfile, 'id' | 'created_at'>>
 
+export type UserSessionInsert = Omit<UserSession, 'id' | 'created_at' | 'updated_at' | 'deleted_at'>
+export type UserSessionUpdate = Partial<Omit<UserSession, 'id' | 'created_at'>>
+
+export type AuditLogInsert = Omit<AuditLog, 'id' | 'created_at'>
+export type AuditLogUpdate = Partial<Omit<AuditLog, 'id' | 'created_at'>>
+
+export type AuthUser = Database['auth']['Tables']['users']['Row']

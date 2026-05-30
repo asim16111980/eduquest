@@ -3,29 +3,6 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { startAuthTimer } from '@/lib/performance'
 import { hasRole, UserRole } from '@/lib/types/database'
 
-interface CookieEntry {
-  name: string
-  value: string
-  options?: Record<string, unknown>
-}
-
-async function cookieToEntry(cookie: any): Promise<CookieEntry> {
-  const sameSite = typeof cookie.sameSite === 'boolean' ? (cookie.sameSite ? 'strict' : 'none') : cookie.sameSite
-  return {
-    name: cookie.name,
-    value: cookie.value,
-    options: {
-      path: cookie.path || '/',
-      domain: cookie.domain,
-      secure: cookie.secure,
-      httpOnly: cookie.httpOnly,
-      sameSite: sameSite as 'strict' | 'lax' | 'none',
-      maxAge: cookie.maxAge,
-      expires: cookie.expires ? new Date(cookie.expires) : undefined,
-    }
-  }
-}
-
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
@@ -39,15 +16,9 @@ export async function middleware(request: NextRequest) {
         getAll() {
           return request.cookies.getAll()
         },
-        setAll(cookiesToSet: CookieEntry[]) {
-          cookiesToSet.forEach(({ name, value }: CookieEntry) =>
-            request.cookies.set(name, value)
-          )
-          supabaseResponse = NextResponse.next({
-            request,
-          })
-          cookiesToSet.forEach(({ name, value, options }: CookieEntry) =>
-            supabaseResponse.cookies.set(name, value, options)
+        setAll(cookiesToSet: Array<{ name: string; value: string; options?: unknown }>) {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options as any)
           )
         },
       },
@@ -115,72 +86,43 @@ export async function middleware(request: NextRequest) {
   if (!user) {
     if (isApiRoute && !request.nextUrl.pathname.startsWith('/api/auth')) {
       // Return 401 for protected API routes
-      const response = NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-      const cookiesToCopy = await Promise.all(supabaseResponse.cookies.getAll().map(c => cookieToEntry(c)))
-      cookiesToCopy.forEach(({ name, value, options }) => response.cookies.set(name, value, options))
-      return response
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     } else if (!request.nextUrl.pathname.startsWith('/auth') && !request.nextUrl.pathname.startsWith('/api/auth')) {
       // Redirect to login for protected pages
       const url = request.nextUrl.clone()
       url.pathname = '/auth/login'
-      const response = NextResponse.redirect(url)
-      const cookiesToCopy = await Promise.all(supabaseResponse.cookies.getAll().map(c => cookieToEntry(c)))
-      cookiesToCopy.forEach(({ name, value, options }) => response.cookies.set(name, value, options))
-      return response
+      return NextResponse.redirect(url)
     }
   }
 
-      // Handle unauthenticated users - check role-based access
-      if (user) {
-        // Check if user is active
-        if (!user.app_metadata?.is_active) {
-          if (isApiRoute) {
-            const response = NextResponse.json({ error: 'Account is disabled' }, { status: 403 })
-            const cookiesToCopy = await Promise.all(supabaseResponse.cookies.getAll().map(c => cookieToEntry(c)))
-            cookiesToCopy.forEach(({ name, value, options }) => response.cookies.set(name, value, options))
-            return response
-        } else {
-          // Redirect to dashboard for insufficient permissions
-          const url = request.nextUrl.clone()
-          url.pathname = '/dashboard'
-          const response = NextResponse.redirect(url)
-          const cookiesToCopy = await Promise.all(supabaseResponse.cookies.getAll().map(c => cookieToEntry(c)))
-          cookiesToCopy.forEach(({ name, value, options }) => response.cookies.set(name, value, options))
-          return response
-        }
-      }
-
+  // Handle authenticated users - check role-based access
+  if (user) {
     // Check if user is active
     if (!user.app_metadata?.is_active) {
       if (isApiRoute) {
-        const response = NextResponse.json({ error: 'Account is disabled' }, { status: 403 })
-        // Copy cookies from supabaseResponse to preserve any updates
-        const cookiesToCopy = supabaseResponse.cookies.getAll()
-        cookiesToCopy.forEach(cookie => {
-          response.cookies.set(cookie.name, cookie.value, {
-            path: cookie.path || '/',
-            domain: cookie.domain,
-            secure: cookie.secure,
-            httpOnly: cookie.httpOnly,
-            sameSite: cookie.sameSite as 'strict' | 'lax' | 'none',
-            maxAge: cookie.maxAge,
-            expires: cookie.expires ? new Date(cookie.expires) : undefined,
-          })
-        })
-        return response
-          } else {
-            // Log out inactive users and redirect to login
-            const url = request.nextUrl.clone()
-            url.pathname = '/auth/login'
-            // Add error message as query parameter
-            url.searchParams.set('error', 'account_disabled')
-            const response = NextResponse.redirect(url)
-            const cookiesToCopy = await Promise.all(supabaseResponse.cookies.getAll().map(c => cookieToEntry(c)))
-            cookiesToCopy.forEach(({ name, value, options }) => response.cookies.set(name, value, options))
-            return response
-          }
-        }
+        return NextResponse.json({ error: 'Account is disabled' }, { status: 403 })
+      } else {
+        // Log out inactive users and redirect to login
+        const url = request.nextUrl.clone()
+        url.pathname = '/auth/login'
+        // Add error message as query parameter
+        url.searchParams.set('error', 'account_disabled')
+        return NextResponse.redirect(url)
       }
+    }
+
+    // Check admin routes
+    if (requiresAdmin && !hasRole(userRole, UserRole.CONTENT_MANAGER)) {
+      if (isApiRoute) {
+        return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
+      } else {
+        // Redirect to dashboard for insufficient permissions
+        const url = request.nextUrl.clone()
+        url.pathname = '/dashboard'
+        return NextResponse.redirect(url)
+      }
+    }
+  }
 
   // IMPORTANT: You *must* return the supabaseResponse object as it is. If you're
   // creating a new object with NextResponse.next() make sure to:

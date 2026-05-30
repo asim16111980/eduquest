@@ -1,22 +1,10 @@
 import { NextResponse } from 'next/server'
 import { performanceMonitor } from '@/lib/performance'
 
-const logger = {
-  error: (message: string, details?: Record<string, unknown>) => {
-    console.error(`[${new Date().toISOString()}] ERROR: ${message}`, details || '')
-  }
-}
-
 export async function GET() {
   try {
     const authMetrics = performanceMonitor.getMetrics('authentication')
-    const dbMetrics = performanceMonitor.getMetrics('databaseQuery')
-
-    // Compute once per request to avoid drift
-    const authAvg = performanceMonitor.getAverageDuration('authentication')
-    const authSuccess = performanceMonitor.getSuccessRate('authentication')
-    const dbAvg = performanceMonitor.getAverageDuration('databaseQuery')
-    const dbSuccess = performanceMonitor.getSuccessRate('databaseQuery')
+    const dbMetrics = performanceMonitor.getMetrics('database_test_connection')
 
     return NextResponse.json({
       success: true,
@@ -24,29 +12,29 @@ export async function GET() {
       metrics: {
         authentication: {
           count: authMetrics.length,
-          averageMs: authAvg,
-          successRate: authSuccess,
+          averageMs: performanceMonitor.getAverageDuration('authentication'),
+          successRate: performanceMonitor.getSuccessRate('authentication'),
           latest: authMetrics.slice(-5),
           threshold: 200
         },
         database: {
           count: dbMetrics.length,
-          averageMs: dbAvg,
-          successRate: dbSuccess,
+          averageMs: performanceMonitor.getAverageDuration('database_test_connection'),
+          successRate: performanceMonitor.getSuccessRate('database_test_connection'),
           latest: dbMetrics.slice(-5),
           threshold: 100
         }
       },
       summary: {
         totalOperations: authMetrics.length + dbMetrics.length,
-        targetMet: authAvg <= 200 && dbAvg <= 100
+        targetMet: (
+          performanceMonitor.getAverageDuration('authentication') <= 200 &&
+          performanceMonitor.getAverageDuration('database_test_connection') <= 100
+        )
       }
     })
   } catch (error) {
-    logger.error('Performance monitoring API error', {
-      message: error instanceof Error ? error.message : 'Unknown error',
-      error
-    })
+    console.error('Performance monitoring API error:', error)
 
     return NextResponse.json(
       {

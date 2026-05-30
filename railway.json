@@ -1,0 +1,54 @@
+{
+  "name": "eduquest-admin-dashboard",
+  "description": "EduQuest Admin Dashboard - Educational Gamification Platform",
+  "version": "1",
+  "build": {
+    "builder": "NIXPACKS",
+    "buildCommand": "npm ci && npm run build",
+    "runCommand": "npm start",
+    "watchPatterns": [
+      "src/**/*"
+    ],
+    "devCommand": "npm run dev"
+  },
+  "deploy": {
+    "env": {
+      "NODE_ENV": "production",
+      "NEXT_TELEMETRY_DISABLED": "1"
+    },
+    "healthcheck": {
+      "path": "/api/health",
+      "interval": 30,
+      "timeout": 10,
+      "retries": 3,
+      "startPeriod": 40
+    },
+    "restartPolicy": {
+      "maxRestarts": 10,
+      "interval": 60
+    }
+  },
+  "env": {
+    "SUPABASE_URL": {
+      "description": "Supabase project URL",
+      "type": "string",
+      "required": true
+    },
+    "SUPABASE_ANON_KEY": {
+      "description": "Supabase anonymous key",
+      "type": "string",
+      "required": true
+    },
+    "SUPABASE_SERVICE_ROLE_KEY": {
+      "description": "Supabase service role key",
+      "type": "string",
+      "required": true
+    },
+    "LOG_LEVEL": {
+      "description": "Minimum log level",
+      "type": "string",
+      "default": "info",
+      "options": ["debug", "info", "warn", "error"]
+    }
+  }
+}
