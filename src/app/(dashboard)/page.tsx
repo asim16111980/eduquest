@@ -1,12 +1,11 @@
 'use client';
 
-import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
-import { SectionErrorBoundary } from '@/components/shared/SectionErrorBoundary';
+import { ErrorBoundary, DashboardSectionBoundary } from '@/components/shared/ErrorBoundary';
 
 function DashboardOverviewContent() {
   return (
     <div className="px-4 py-6 sm:px-0">
-      <SectionErrorBoundary title="Dashboard Overview">
+      <DashboardSectionBoundary title="Dashboard Overview" id="dashboard-overview">
         <div className="border-4 border-dashed border-gray-200 rounded-lg p-6">
           <h2 className="text-lg leading-6 font-medium text-gray-900 mb-4">Dashboard Overview</h2>
           <p className="text-sm text-gray-600 mb-6">
@@ -14,7 +13,7 @@ function DashboardOverviewContent() {
             view analytics, and configure platform settings.
           </p>
 
-          <SectionErrorBoundary title="Quick Actions">
+          <DashboardSectionBoundary title="Quick Actions" id="quick-actions">
             <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
               <div className="bg-white overflow-hidden shadow rounded-lg">
                 <div className="px-4 py-5 sm:p-6">
